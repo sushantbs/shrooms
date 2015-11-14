@@ -1,6 +1,8 @@
 body {
   padding: 50px;
   font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
+  width: 400px;
+  margin: 0 auto;
 
 	a {
 	  color: #00B7FF;
@@ -11,6 +13,31 @@ body {
 
 		> span {
 			padding-right: 10px;
+		}
+	}
+
+	.header {
+		position: relative;
+
+		.create-room-link {
+			position: absolute;
+			right: 10px;
+			top: 3px;
+		}
+	}
+
+	.participant-list {
+
+		h4 {
+			font-weight: normal;
+			font-size: 18px;
+		}
+
+		.participant-name {
+			padding: 5px;
+			border: 1px solid #fff;
+			color: #e5e5e5;
+			background-color: #333;
 		}
 	}
 }
