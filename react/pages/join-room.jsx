@@ -7,6 +7,7 @@ class JoinRoom extends Component {
 	state = {
 		name: 'Test Participant',
 		handshakeComplete: false,
+		fetchingRoom: false,
 		error: null
 	}
 
@@ -24,8 +25,62 @@ class JoinRoom extends Component {
 					return;
 				}
 
+				if (window.localStorage) {
+					localStorage.setItem(t.state.roomId, t.state.name);
+				}
+
 				t.setState({handshakeComplete: true, roomData: response.body.data});
 			});
+	}
+
+	sendLeaveRequest () {
+		var t = this;
+
+		service()
+			.post('/api/leave')
+			.send(this.state)
+			.end(function (err, response) {
+
+				if (err) {
+					t.setState({error: 'Error'});
+					return;
+				}
+
+				if (window.localStorage) {
+					localStorage.removeItem(t.state.roomId);
+				}
+
+				t.setState({handshakeComplete: false, roomData: null, fetchingRoom: false});
+			});
+	}
+
+	getRoomState () {
+		var t = this;
+
+		service()
+			.get('/api/roomstate')
+			.query({roomId: this.state.roomId})
+			.end(function (err, response) {
+
+				if (err) {
+					t.setState({error: 'Error'});
+					return;
+				}
+
+				t.setState({handshakeComplete: true, roomData: response.body.data, fetchingRoom: false});
+			});
+	}
+
+	componentWillMount () {
+
+		if (window.localStorage) {
+			var name = localStorage.getItem(this.state.roomId);
+			if (name) {
+				this.state.name = name;
+				this.state.fetchingRoom = true;
+				this.getRoomState();
+			}
+		}
 	}
 
 	constructor (props, context) {
@@ -45,20 +100,24 @@ class JoinRoom extends Component {
 
 	render () {
 
-		var content;
+		var content = 'Please wait...';
 
 		if (this.state.handshakeComplete) {
-			content = (
+			content = [
+				<div className='room-name'>{this.state.roomData.name}</div>,
 				<div className='participant-list'>
 					<h4>Participant List</h4>
-					{_.map(this.state.roomData.participants, (participant, index) => (<div key={'participant-' + index} className='participant-name'>{participant}</div>))}
-				</div>);
+					{_.map(this.state.roomData.participants, (participant, index) =>
+						(participant === this.state.name) ?
+							(<div key={'participant-' + index} className='participant-name'>{participant}<input className='leave-button' type='button' value='Leave' onClick={this.sendLeaveRequest.bind(this)} /></div>)
+							: (<div key={'participant-' + index} className='participant-name'>{participant}</div>))}
+				</div>];
 		} else if (this.state.error) {
 			content = (
 				<div className='participant-details'>
 					<div className='error-message'>{this.state.error}</div>
 				</div>);
-		} else {
+		} else if (!this.state.fetchingRoom) {
 			content = (
 				<div className='participant-details'>
 					<form>
