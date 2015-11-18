@@ -4,6 +4,10 @@ body {
   width: 400px;
   margin: 0 auto;
 
+  * {
+  	box-sizing: border-box;
+  }
+
 	a {
 	  color: #00B7FF;
 	}
@@ -50,17 +54,70 @@ body {
 			background-color: #333;
 			position: relative;
 
+			.participant-worth {
+				position: absolute;
+				background-color: green;
+				color: #fff;
+				border-width: 0;
+				padding: 0 5px;
+				right: 5px;
+				width: 70px;
+				text-align: right;
+			}
+
 			.leave-button {
 				position: absolute;
 				background-color: #696969;
 				color: #fff;
 				border-width: 0;
-				right: 5px;
+				right: 80px;
 
 				&:hover {
 					background-color: red;
 					color: #fff;
 				}
+			}
+		}
+	}
+
+	.start-button {
+		margin: 10px auto;
+		display: block;
+		font-size: 20px;
+	}
+
+	.game-section {
+		margin: 20px auto;
+
+		.participant-block {
+			border: 1px solid #696969;
+			padding: 10px;
+			margin: 5px auto;
+			text-align: center;
+
+			&.my-block {
+				border: 2px solid green;
+			}
+
+			&.dealer-block {
+
+				.block-name {
+					&:after {
+						content: ' - DEALER';
+					}
+				}
+			}
+
+			.block-name {
+				font-size: 20px;
+			}
+
+			.block-worth {
+				font-size: 24px;
+			}
+
+			.block-pot {
+				font-size: 30px;
 			}
 		}
 	}

@@ -31,6 +31,12 @@ router.post('/create', function (req, res, next) {
 	postBody.participants = [];
 	postBody._id = new ObjectId();
 
+	postBody.gameState = {
+		stage: 0,
+		blinds: 10,
+		dealer: 0
+	}
+
 	connectToDB()
 		.then(function (dbhandle) {
 
@@ -40,6 +46,7 @@ router.post('/create', function (req, res, next) {
 					return;
 				}
 
+				dbhandle.close();
 				res.send({status: 'success', data: postBody._id});
 			});
 		})
@@ -59,7 +66,9 @@ router.post('/join', function (req, res, next) {
 
 	connectToDB()
 		.then(function (dbhandle) {
-			dbhandle.collection('rooms').updateOne({_id: objectId}, {$addToSet: {participants: postBody.name}}, function (err, update) {
+			dbhandle.collection('rooms').updateOne({_id: objectId}, {
+				$addToSet: {participants: {name: postBody.name, worth: postBody.buyIn}}
+			}, function (err, update) {
 
 				if (err) {
 					console.log(err);
@@ -81,6 +90,7 @@ router.post('/join', function (req, res, next) {
 						return;
 					}
 
+					dbhandle.close();
 					res.send({status: 'success', data: fetch});
 				});
 			});
@@ -123,6 +133,7 @@ router.post('/leave', function (req, res, next) {
 						return;
 					}
 
+					dbhandle.close();
 					res.send({status: 'success', data: fetch});
 				});
 			});
@@ -131,6 +142,61 @@ router.post('/leave', function (req, res, next) {
 			console.log(err);
 			res.status(500).send(err);
 		});
+});
+
+router.post('/startgame', function (req, res, next) {
+
+	var postBody = req.body;
+	var objectId = ObjectId(postBody.roomId),
+		resultObj = {};
+
+	connectToDB()
+		.then(function (dbhandle) {
+			dbhandle.collection('rooms').updateOne({_id: objectId}, {
+				$set: {"inProgress": true}
+			}, function (err, update) {
+
+				if (err) {
+					console.log(err);
+					res.status(500).end('Error updating the Room');
+					return;
+				}
+
+				if (!update.result.n) {
+					console.log('No result');
+					res.status(500).end('Room not found');
+					return;
+				}
+
+				dbhandle.collection('rooms').findOne({_id: objectId}, function (err, fetch) {
+
+					if (err) {
+						console.log(err);
+						res.status(500).send(err);
+						return;
+					}
+
+					dbhandle.close();
+					res.send({status: 'success', data: fetch});
+				});
+			});
+		})
+		.catch(function (err) {
+			console.log(err);
+			res.status(500).send(err);
+		});
+});
+
+router.post('/deal', function (req, res, next) {
+
+});
+
+router.post('/playturn', function (req, res, next) {
+
+});
+
+router.post('/pauseplay', function (req, res, next) {
+
 });
 
 router.get('/roomstate', function (req, res, next) {
@@ -151,6 +217,7 @@ router.get('/roomstate', function (req, res, next) {
 					return;
 				}
 
+				dbhandle.close();
 				res.send({status: 'success', data: fetch});
 			});
 		})
