@@ -145,8 +145,8 @@ class JoinRoom extends Component {
 							: (<div key={'participant-' + index} className='participant-name'>{participant.name}<span className='participant-worth'>{participant.worth}</span></div>))}
 				</div>,
 				((!this.state.started && this.state.roomData.creator === this.state.name) ?
-					(<input key='start-game-button' className='start-button' type='button' value='Start Game' onClick={this.startGame.bind(this)}/>):
-						(<App key='game-of-room' room={this.state.roomData} getState={this.getRoomState.bind(this)} me={this.state.name} />))
+					(<input key='start-game-button' className='start-button' type='button' value='Start Game' onClick={this.startGame.bind(this)} />) :
+						(<App key='game-of-room' room={this.state.roomData} getState={this.getRoomState.bind(this)} me={this.state.name} roomId={this.state.roomId} />))
 				];
 		} else if (this.state.error) {
 			content = (

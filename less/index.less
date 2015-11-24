@@ -89,6 +89,44 @@ body {
 	.game-section {
 		margin: 20px auto;
 
+		.card {
+			width: 60px;
+			height: 100px;
+			display: inline-block;
+			margin: 0 5px;
+			padding-top: 30px;
+			text-align: center;
+			border: 1px solid #666;
+			font-size: 30px;
+		}
+
+		.stacked {
+			position: absolute;
+			left: 0;
+			top: 0;
+		}
+
+		.upside-down {
+			content: 'GR';
+		}
+
+		.card-block {
+
+			border: 1px solid #696969;
+			padding: 5px;
+
+			.all-cards, .burn-cards, .flop-cards, .turn-cards, .river-cards {
+				margin: 0 5px;
+				display: inline-block;
+				position: relative;
+			}
+
+			.all-cards, .burn-cards {
+				width: 60px;
+				height: 100px;
+			}
+		}
+
 		.participant-block {
 			border: 1px solid #696969;
 			padding: 10px;
