@@ -136,6 +136,10 @@ class PokerApp extends Component {
 
 	renderActions (pot, index) {
 
+		if (!pot.players) {
+			pot.players = [];
+		}
+
 		var player = pot.players[index];
 
 		if (!player) {
@@ -208,7 +212,7 @@ class PokerApp extends Component {
 					if (dealer === me) {
 						dealButton = (<input type='button' className='deal-button' value='Deal' onClick={this.deal.bind(this)} />);
 					} else {
-						dealButton = (<div className='dealer-text'>Waiting for dealer</div>);
+						dealButton = (<div className='dealer-text'>Waiting for the deal</div>);
 					}
 				}
 			}
@@ -218,8 +222,8 @@ class PokerApp extends Component {
 					<div className='block-name'>{participant.name}</div>
 					<div className='block-worth'>{participant.worth}</div>
 					{cardBlock}
-					<div className='block-pot-value'>In the pot: {(pot.players[index] && pot.players[index].contrib) || 0}</div>
-					{((roomState.participants[gameState.currentPlayer].name === me) && (gameState.currentPlayer === index)) ? this.renderActions(pot, index) : null}
+					{pot ? (<div className='block-pot-value'>In the pot: {(pot.players[index] && pot.players[index].contrib) || 0}</div>) : null }
+					{((gameState.stage && roomState.participants[gameState.currentPlayer].name === me) && (gameState.currentPlayer === index)) ? this.renderActions(pot, index) : null}
 					{dealButton}
 				</div>);
 		});
@@ -231,7 +235,7 @@ class PokerApp extends Component {
 						<div className='card upside-down stacked'>GR</div>
 					</div>
 					<div className='burn-cards'>
-						<div className='card upside-down stacked'>GR</div>
+						{gameState.burnCards.length ? (<div className='card upside-down stacked'>GR</div>) : null}
 					</div>
 				</div>
 				<div className='flop-cards'>{_.map(gameState.flop, this.renderCard.bind(this))}</div>

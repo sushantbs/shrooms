@@ -134,6 +134,20 @@ class JoinRoom extends Component {
 
 		var content = 'Please wait...';
 
+		var appArea = null;
+
+		if (!this.state.started) {
+			if (!this.state.roomData) {
+				appArea = (<span>Fetching room data...</span>);
+			} else if (this.state.roomData.creator === this.state.name) {
+				appArea = (<input key='start-game-button' className='start-button' type='button' value='Start Game' onClick={this.startGame.bind(this)} />);
+			} else {
+				appArea = (<span>Waiting for game to start</span>);
+			}
+		} else {
+			appArea = (<App key='game-of-room' room={this.state.roomData} getState={this.getRoomState.bind(this)} me={this.state.name} roomId={this.state.roomId} />);
+		}
+
 		if (this.state.handshakeComplete) {
 			content = [
 				<div key='room-name' className='room-name'>{this.state.roomData.name}</div>,
@@ -143,10 +157,8 @@ class JoinRoom extends Component {
 						(participant.name === this.state.name) ?
 							(<div key={'participant-' + index} className='participant-name'>{participant.name}<span className='participant-worth'>{participant.worth}</span><input className='leave-button' type='button' value='Leave' onClick={this.sendLeaveRequest.bind(this)} /></div>)
 							: (<div key={'participant-' + index} className='participant-name'>{participant.name}<span className='participant-worth'>{participant.worth}</span></div>))}
+					{appArea}
 				</div>,
-				((!this.state.started && this.state.roomData.creator === this.state.name) ?
-					(<input key='start-game-button' className='start-button' type='button' value='Start Game' onClick={this.startGame.bind(this)} />) :
-						(<App key='game-of-room' room={this.state.roomData} getState={this.getRoomState.bind(this)} me={this.state.name} roomId={this.state.roomId} />))
 				];
 		} else if (this.state.error) {
 			content = (
