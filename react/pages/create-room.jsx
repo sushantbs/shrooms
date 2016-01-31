@@ -4,8 +4,9 @@ import service from 'myx-lib/service';
 class CreateRoom extends Component {
 
 	state = {
-		name: 'Test Room',
-		creator: 'Test Creator'
+		name: 'Poker',
+		creator: 'Creator',
+		buyIn: 1000
 	}
 
 	submitForm () {
@@ -19,6 +20,10 @@ class CreateRoom extends Component {
 				if (err) {
 					t.setState({error: 'Error'});
 					return;
+				}
+
+				if (window.localStorage) {
+					localStorage.setItem(response.body.data, t.state.name);
 				}
 
 				t.context.router.transitionTo('/join/' + response.body.data);
@@ -46,10 +51,13 @@ class CreateRoom extends Component {
 			<div className='create-room'>
 				<form>
 					<div>
-						<span>Name: </span><input type='text' name='name' value={this.state.name || 'Test Room'} onChange={this.updateState.bind(this, 'name')} />
+						<span>Room Name: </span><input type='text' name='name' value={this.state.name || 'Test Room'} onChange={this.updateState.bind(this, 'name')} />
 					</div>
 					<div>
 						<span>Creator's Name: </span><input type='text' name='creator' value={this.state.creator || 'Sushant'} onChange={this.updateState.bind(this, 'creator')} />
+					</div>
+					<div>
+						<span>Buy In: </span><input type='number' name='name' value={this.state.buyIn || 1000} onChange={this.updateState.bind(this, 'buyIn')} />
 					</div>
 					<div>
 						<input type='button' value='Create Room' onClick={this.submitForm.bind(this)} />

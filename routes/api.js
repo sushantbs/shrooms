@@ -3,10 +3,14 @@ var router = express.Router();
 var debug = require('debug')('api');
 var Promise = require('es6-promise').Promise;
 
+var Room = require('../modules/room');
+var Participant = require('../modules/participant');
+
 var MongoClient = require('mongodb').MongoClient;
 var ObjectId = require('mongodb').ObjectID;
 var crypto = require('crypto-js');
 var _ = require('myx-lib/underscore');
+var calulateWinnings = require('../lib/winnings-calculator').calculateWinnings;
 
 var cardValue = {
 	'2': 2,
@@ -41,158 +45,16 @@ function connectToDB () {
 	return promise;
 }
 
-function calculateWinnings (roomState) {
-
-	var participantResult = [],
-		gameState = roomState.gameState,
-		tableCards = gameState.flop.concat(gameState.turn).concat(gameState.river),
-		allSeven = null,
-		results = [];
-
-	_.each(roomState.participants, function (participant, index) {
-
-		if (!participant.hasFolded) {
-
-			allSeven = tableCards.concat(participant.cards);
-			allSeven = _.sortBy(allSeven, function (card) {return cardValue[card.split(':')[0]]});
-
-			var combinationMap = {
-				cards: {
-					highCard: allSeven[6],
-					pair: 0,
-					twoPair: 0,
-					threeok: 0,
-					straight: 0,
-					flush: 0,
-					fullhouse: 0,
-					fourok: 0,
-					straightFlush: 0,
-					royalFlush: 0,
-				},
-				context: {
-					maxMatch: 1,
-					maxSequence: 1,
-					maxSuit: 1,
-					match: 1,
-					sequence: 1,
-					suit: {1: [], 2: [], 3: [], 4: []},
-					matches: [],
-					sequences: [],
-					singles: [],
-					isMatching: false,
-					isSequence: false
-				}
-			};
-
-			var ct = combinationMap.context;
-			var combo = combinationMap.cards;
-
-			_.each(allSeven, function (card, index) {
-
-				var temp = card.split(':');
-				var cardValue = temp[0];
-				var cardSuit = temp[1];
-
-				ct.suit[cardSuit].push(card);
-
-				if (!index) {
-					return;
-				}
-
-				var prevCard = allSeven[index - 1];
-				temp = prevCard.split(':');
-				var prevValue = temp[0];
-				var prevSuit = temp[1];
-
-				if (cardValue === prevValue) {
-					if (ct.isMatching) {
-						ct.match += 1;
-						ct.matches[ct.matches.length - 1].push(card);
-					} else {
-						ct.isMatching = true;
-						ct.match = 2;
-						ct.matches.push([card, prevCard]);
-					}
-
-					if (ct.match === 2) {
-						if (combo.pair) {
-							combo.twoPair = 1;
-						} else {
-							combo.pair = 1;
-						}
-					} else if (ct.match === 3) {
-						combo.threeok = 1;
-						if (combo.pair) {
-							combo.fullhouse = 1;
-						}
-					} else if (ct.match === 4) {
-						combo.fourok = 1;
-					} else {
-						console.log('Abe! The number of matching cards is more than 4??');
-					}
-					// is maxMatch necessary?
-					ct.maxMatch = Math.max(ct.match, ct.maxMatch);
-				} else {
-
-					if (ct.isMatching) {
-						ct.isMatching = false;
-					}
-
-					if (cardValue - prevValue === 1) {
-
-						if (ct.isSequence) {
-							ct.sequence += 1;
-							ct.sequences[ct.sequences.length - 1].push(card);
-						} else {
-							ct.sequence = 2;
-							ct.isSequence = true;
-							ct.sequences.push([card, prevCard]);
-						}
-
-						ct.maxSequence = Math.max(ct.sequence, ct.maxSequence);
-
-						if (ct.sequence >= 5) {
-							combo.straight = 1;
-						}
-
-					} else {
-						if (ct.isSequence) {
-							ct.isSequence = false;
-						}
-					}
-				}
-
-				if (ct.suit[cardSuit].length >= 5) {
-					combo.flush = 1;
-				}
-			});
-
-			console.log('Result Obj');
-			console.log(JSON.stringify(combinationMap, null, 4));
-
-			// Check for a,2,3,4,5 straight possibility
-			// if () {
-
-			// }
-		}
-	});
-
-	if (!results.length) {
-		console.log('ERROR: Abe?! Yeh kya hua?? Koi winner toh hona chahiye!');
-		return false;
-	}
-
-	return results;
-}
 
 router.post('/create', function (req, res, next) {
 	var postBody = req.body;
 	debug(postBody);
 
-	postBody.participants = [];
+	postBody.participants = [{name: postBody.name, isCreator: true, worth: postBody.buyIn}];
 	postBody._id = new ObjectId();
 
 	postBody.gameState = {
+		buyIn: 0,
 		stage: 0,
 		blinds: 10,
 		dealer: 0,
@@ -203,12 +65,13 @@ router.post('/create', function (req, res, next) {
 		river: [],
 		cards: [],
 		pots:[]
-	}
+	};
 
 	connectToDB()
 		.then(function (dbhandle) {
 
 			dbhandle.collection('rooms').insertOne(postBody, function (err, result) {
+
 				if (err) {
 					res.status(500).send(err);
 					return;
@@ -235,7 +98,7 @@ router.post('/join', function (req, res, next) {
 	connectToDB()
 		.then(function (dbhandle) {
 			dbhandle.collection('rooms').updateOne({_id: objectId}, {
-				$addToSet: {participants: {name: postBody.name, worth: postBody.buyIn}}
+				$addToSet: {participants: {name: postBody.name, isCreator: false, worth: postBody.buyIn}}
 			}, function (err, update) {
 
 				if (err) {
