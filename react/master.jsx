@@ -1,9 +1,9 @@
 import React, {Component} from 'react';
-import {RouteHandler, Link} from 'react-router';
+import {Link} from 'react-router';
 
 require('../less/index.less');
 
-class MasterContainer extends Component {
+export default class MasterContainer extends Component {
 
 	render () {
 		return (
@@ -14,9 +14,7 @@ class MasterContainer extends Component {
 						<Link to='/create'>Create Room</Link>
 					</div>
 				</div>
-				<RouteHandler />
+				{this.props.children}
 			</div>);
 	}
 }
-
-export default MasterContainer;

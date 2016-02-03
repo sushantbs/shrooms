@@ -3,7 +3,7 @@ var gulp = require('gulp');
 var gutil = require('gulp-util');
 var fs = require('fs');
 var path = require('path');
-var _ = require('myx-lib/underscore');
+var _ = require('lodash');
 var config = require('../config').webpack;
 
 gulp.task('webpack', function (callback) {

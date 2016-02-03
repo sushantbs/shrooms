@@ -1,8 +1,8 @@
 import React, {Component} from 'react';
-import service from 'myx-lib/service';
-import _ from 'myx-lib/underscore';
+import service from 'superagent';
+import _ from 'lodash';
 
-import App  from '../apps/poker/app.jsx';
+import App from '../apps/poker/app.jsx';
 
 class JoinRoom extends Component {
 
@@ -142,7 +142,7 @@ class JoinRoom extends Component {
 			} else if (this.state.roomData.creator === this.state.name) {
 				appArea = (<input key='start-game-button' className='start-button' type='button' value='Start Game' onClick={this.startGame.bind(this)} />);
 			} else {
-				appArea = (<span>Waiting for game to start</span>);
+				appArea = (<input key='start-game-button' className='start-button' type='button' value='Start Game' onClick={this.startGame.bind(this)} />);
 			}
 		} else {
 			appArea = (<App key='game-of-room' room={this.state.roomData} getState={this.getRoomState.bind(this)} me={this.state.name} roomId={this.state.roomId} />);

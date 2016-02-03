@@ -1,6 +1,6 @@
 import React, {Component} from 'react';
-import _ from 'myx-lib/underscore';
-import service from 'myx-lib/service';
+import _ from 'lodash';
+import service from 'superagent';
 
 class PokerApp extends Component {
 

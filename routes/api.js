@@ -9,7 +9,7 @@ var Participant = require('../modules/participant');
 var MongoClient = require('mongodb').MongoClient;
 var ObjectId = require('mongodb').ObjectID;
 var crypto = require('crypto-js');
-var _ = require('myx-lib/underscore');
+var _ = require('lodash');
 var calulateWinnings = require('../lib/winnings-calculator').calculateWinnings;
 
 var cardValue = {

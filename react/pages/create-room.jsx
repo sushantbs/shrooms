@@ -1,7 +1,8 @@
 import React, {Component} from 'react';
-import service from 'myx-lib/service';
+import {Router, browserHistory} from 'react-router';
+import service from 'superagent';
 
-class CreateRoom extends Component {
+class PokerRoom extends Component {
 
 	state = {
 		name: 'Poker',
@@ -12,7 +13,7 @@ class CreateRoom extends Component {
 	submitForm () {
 		var t = this;
 
-		service()
+		service
 			.post('/api/create')
 			.send(this.state)
 			.end(function (err, response) {
@@ -26,7 +27,9 @@ class CreateRoom extends Component {
 					localStorage.setItem(response.body.data, t.state.name);
 				}
 
-				t.context.router.transitionTo('/join/' + response.body.data);
+				browserHistory.push({
+					pathname: '/join/' + response.body.data
+				});
 			});
 	}
 
@@ -44,17 +47,23 @@ class CreateRoom extends Component {
 		this.setState(state);
 	}
 
+	handleKeyDown (e) {
+		debugger;
+		if (e.keyCode === 13) {
+				this.submitForm();
+		}
+	}
 
 	render () {
 
 		return (
 			<div className='create-room'>
-				<form>
+				<form onKeyUp={this.handleKeyDown.bind(this)}>
 					<div>
 						<span>Room Name: </span><input type='text' name='name' value={this.state.name || 'Test Room'} onChange={this.updateState.bind(this, 'name')} />
 					</div>
 					<div>
-						<span>Creator's Name: </span><input type='text' name='creator' value={this.state.creator || 'Sushant'} onChange={this.updateState.bind(this, 'creator')} />
+						<span>Admin Name: </span><input type='text' name='creator' value={this.state.creator || 'Sushant'} onChange={this.updateState.bind(this, 'creator')} />
 					</div>
 					<div>
 						<span>Buy In: </span><input type='number' name='name' value={this.state.buyIn || 1000} onChange={this.updateState.bind(this, 'buyIn')} />
@@ -67,8 +76,4 @@ class CreateRoom extends Component {
 	}
 }
 
-CreateRoom.contextTypes = {
-	router: React.PropTypes.func.isRequired
-}
-
-export default CreateRoom;
+export default PokerRoom;
