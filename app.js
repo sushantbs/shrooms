@@ -8,8 +8,16 @@ var routes = require('./routes/index');
 var users = require('./routes/users');
 var api = require('./routes/api');
 
+var csession = require('client-sessions');
+
 var app = express();
 
+app.use(csessions({
+  cookieName: 'roomsession', // cookie name dictates the key name added to the request object
+  secret: 'N501tgoe$4newL!fe', // should be a large unguessable string
+  duration: 24 * 60 * 60 * 1000, // how long the session will stay valid in ms
+  activeDuration: 1000 * 60 * 5 // if expiresIn < activeDuration, the session will be extended by activeDuration milliseconds
+}));
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'jade');

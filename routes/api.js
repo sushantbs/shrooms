@@ -3,14 +3,15 @@ var router = express.Router();
 var debug = require('debug')('api');
 var Promise = require('es6-promise').Promise;
 
-var Room = require('../modules/room');
-var Participant = require('../modules/participant');
+var Shrooms = require('../shrooms');
 
 var MongoClient = require('mongodb').MongoClient;
 var ObjectId = require('mongodb').ObjectID;
-var crypto = require('crypto-js');
+
 var _ = require('lodash');
 var calulateWinnings = require('../lib/winnings-calculator').calculateWinnings;
+
+var SHROOMCOLLECTION = {};
 
 var cardValue = {
 	'2': 2,
@@ -47,132 +48,100 @@ function connectToDB () {
 
 
 router.post('/create', function (req, res, next) {
+
 	var postBody = req.body;
 	debug(postBody);
 
-	postBody.participants = [{name: postBody.name, isCreator: true, worth: postBody.buyIn}];
-	postBody._id = new ObjectId();
+	var rule = postBody.rule,
+		context = postBody.context,
+		name = postBody.name,
+		creator = postBody.creator;
 
-	postBody.gameState = {
-		buyIn: 0,
-		stage: 0,
-		blinds: 10,
-		dealer: 0,
-		currentPlayer: 0,
-		burnCards: [],
-		flop: [],
-		turn: [],
-		river: [],
-		cards: [],
-		pots:[]
-	};
+	var roomObj = new Room({creatorName: creator});
 
-	connectToDB()
-		.then(function (dbhandle) {
+	switch (rule) {
 
-			dbhandle.collection('rooms').insertOne(postBody, function (err, result) {
+		case 1:
+			roomObj
+				.setRules(require('../app/poker/rules'))
+				.setContext(context)
+				.write()
+				.then(function (result) {
 
-				if (err) {
-					res.status(500).send(err);
-					return;
-				}
+					var id = result.id;
 
-				dbhandle.close();
-				res.send({status: 'success', data: postBody._id});
-			});
-		})
-		.catch(function (err) {
-			console.log(err);
-			res.status(500).send(err);
-		});
+					req.roomsession.roomId = id;
+					req.roomsession.participantName = result.participantName;
+
+					ROOMS[id] = roomObj;
+
+					res.status(200).send({status: 'success', data: result});
+				})
+				.catch(function (err) {
+					res.status(500).send({status: 'error', error: 'Error while creating the room'});
+				});
+
+			break;
+
+		default:
+			console.error('Rules set invalid');
+			return res.status(500).send({status: 'error', error: 'Rules set invalid'});
+	}
 });
 
 router.post('/join', function (req, res, next) {
 
-	var postBody = req.body;
-	debug(postBody);
+	var postBody = req.body,
+		joinRoomId = postBody.roomId
+		existingRoomId = req.roomsession.roomId,
+		existingName = req.roomsession.participantName,
+		roomObj = ROOMS[joinRoomId];
 
-	var objectId = ObjectId(postBody.roomId),
-		resultObj = {};
+	if (existingRoomId) {
+		if ((existingRoomId === joinRoomId) && (existingName === postBody.name)) {
+			res.redirect('/room/' + joinRoomId);
+		} else if () {
+			res.status(500).send({status: 'error', error: 'You are part of another room or are part of this room as another participant.'});
+		}
+	} else if (roomObj.isClosed) {
+		return res.status(500).send({status: 'error', error: 'The rooms is not accepting any more participants.'});
+	} else {
+		roomObj
+			.joinRoom({name: postBody.name, context: postBody.context})
+			.write()
+			.then(function (result) {
 
-	connectToDB()
-		.then(function (dbhandle) {
-			dbhandle.collection('rooms').updateOne({_id: objectId}, {
-				$addToSet: {participants: {name: postBody.name, isCreator: false, worth: postBody.buyIn}}
-			}, function (err, update) {
+				req.roomsession.roomId = joinRoomId;
+				req.roomsession.participantName = postBody.name;
 
-				if (err) {
-					console.log(err);
-					res.status(500).end('Error updating the Room');
-					return;
-				}
-
-				if (!update.result.n) {
-					console.log('No result');
-					res.status(500).end('Room not found');
-					return;
-				}
-
-				dbhandle.collection('rooms').findOne({_id: objectId}, function (err, fetch) {
-
-					if (err) {
-						console.log(err);
-						res.status(500).send(err);
-						return;
-					}
-
-					dbhandle.close();
-					res.send({status: 'success', data: fetch});
-				});
+				res.status(200).send({status: 'success', data: result});
+			})
+			.catch(function (err) {
+				res.status(500).send({status: 'error', error: 'Error in joining room. Please try again.'});
 			});
-		})
-		.catch(function (err) {
-			console.log(err);
-			res.status(500).send(err);
-		});
+	}
 });
 
 router.post('/leave', function (req, res, next) {
 
-	var postBody = req.body;
-	debug(postBody);
+	var participantName = req.roomsession.participantName,
+		roomId = req.roomsession.roomId;
 
-	var objectId = ObjectId(postBody.roomId),
-		resultObj = {};
+	roomObj = ROOMS[roomId];
 
-	connectToDB()
-		.then(function (dbhandle) {
-			dbhandle.collection('rooms').updateOne({_id: objectId}, {$pull: {participants: postBody.name}}, function (err, update) {
-
-				if (err) {
-					console.log(err);
-					res.status(500).end('Error updating the Room');
-					return;
-				}
-
-				if (!update.result.n) {
-					console.log('No result');
-					res.status(500).end('Room not found');
-					return;
-				}
-
-				dbhandle.collection('rooms').findOne({_id: objectId}, function (err, fetch) {
-
-					if (err) {
-						console.log(err);
-						res.status(500).send(err);
-						return;
-					}
-
-					dbhandle.close();
-					res.send({status: 'success', data: fetch});
-				});
-			});
+	roomObj
+		.leaveRoom({name: })
+		.write()
+		.then(function (result) {
+			res.status(200).send({status: 'success', data: result});
 		})
 		.catch(function (err) {
-			console.log(err);
-			res.status(500).send(err);
+			res.status(500).send({status: 'error', error: 'Error in leaving the room. Please try again.'});
 		});
+});
+
+router.post('/remove', function (req, res, next) {
+
 });
 
 router.post('/startgame', function (req, res, next) {

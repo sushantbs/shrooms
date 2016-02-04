@@ -1,3 +1,9 @@
+
+var MongoClient = require('mongodb').MongoClient;
+var ObjectId = require('mongodb').ObjectID;
+var crypto = require('crypto-js');
+var Promise = require('es6-promise').Promise;
+
 var Participant = require('./participant');
 
 var Room = function (roomOptions, creator) {
@@ -30,6 +36,7 @@ Room.prototype = {
     },
 
     joinRoom: function (participant) {
+
       var np = new Participant(participant);
 
       np.prev = this.last;
@@ -39,6 +46,42 @@ Room.prototype = {
       this.last = np;
 
       this.size += 1;
+
+      connectToDB()
+        .then(function (dbhandle) {
+          dbhandle.collection('rooms').updateOne({_id: objectId}, {
+            $addToSet: {participants: {name: postBody.name, isCreator: false, worth: postBody.buyIn}}
+          }, function (err, update) {
+
+            if (err) {
+              console.log(err);
+              res.status(500).end('Error updating the Room');
+              return;
+            }
+
+            if (!update.result.n) {
+              console.log('No result');
+              res.status(500).end('Room not found');
+              return;
+            }
+
+            dbhandle.collection('rooms').findOne({_id: objectId}, function (err, fetch) {
+
+              if (err) {
+                console.log(err);
+                res.status(500).send(err);
+                return;
+              }
+
+              dbhandle.close();
+              res.send({status: 'success', data: fetch});
+            });
+          });
+        })
+    		.catch(function (err) {
+    			console.log(err);
+    			res.status(500).send(err);
+    		});
     },
 
     leaveRoom: function (participant) {
@@ -77,6 +120,42 @@ Room.prototype = {
       }
 
       this.dispose();
+    },
+
+    setRules: function (ruleSet) {
+
+      //_.extend(this, ruleSet.plays);
+
+      return this;
+    },
+
+    setContext: function (context) {
+
+      return this;
+    },
+
+    write: function () {
+
+      var promise = new Promise(function (resolve, reject) {
+
+        getDBHandleFromPool()
+          .then(function (rooms) {
+            rooms.insert(this.getState(), function (err, result) {
+              if (err) {
+                console.log(error);
+                return reject(err);
+              }
+
+              resolve(result);
+            });
+          })
+          .catch(function (err) {
+            console.log(err);
+            return reject(err);
+          });
+      });
+
+      return promise;
     },
 
     getParticipantList: function () {

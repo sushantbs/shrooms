@@ -1,20 +1,32 @@
 import React, {Component} from 'react';
 import {Link} from 'react-router';
 
-require('../less/index.less');
+import ThemeManager from 'material-ui/lib/styles/theme-manager';
+import DarkTheme from 'material-ui/lib/styles/raw-themes/dark-raw-theme';
+import AppBar from 'material-ui/lib/app-bar';
+import AppCanvas from 'material-ui/lib/app-canvas';
+
+require('../less/index2.less');
 
 export default class MasterContainer extends Component {
 
+	static childContextTypes = {
+			muiTheme: React.PropTypes.object
+	}
+
+	getChildContext () {
+		return {
+			muiTheme: ThemeManager.getMuiTheme(DarkTheme)
+		}
+	}
+
 	render () {
 		return (
-			<div className='content'>
+			<AppCanvas className='content'>
 				<div className='header'>
-					<h3>Secure Rooms</h3>
-					<div className='create-room-link'>
-						<Link to='/create'>Create Room</Link>
-					</div>
+				<AppBar title="Shroom Rule" />
 				</div>
 				{this.props.children}
-			</div>);
+			</AppCanvas>);
 	}
 }

@@ -11,20 +11,6 @@ gulp.task('webpack', function (callback) {
 		if (err) {
 			throw new gutil.PluginError("webpack", err);
 		}
-        gutil.log("[webpack]", stats.toString());
-
-        // gutil.log("[fonts]", "Starting...");
-       //  fs.readdir('./src/assets/fonts', function (err, files) {
-       //  	_.each(files, function (fileName) {
-
-       //  		if (/(woff)$/.test(fileName)) {
-			    //    	var writeFileName = path.join('./build/', fileName),
-			    //    		readFileName = path.join('./src/assets/fonts/', fileName);
-
-			    //    	fs.writeFile(writeFileName, fs.readFileSync(readFileName));
-			    // }
-       //  	});
-       //  	gutil.log("[fonts]", "Completed");
-       //  });
+    gutil.log("[webpack]", stats.toString());
 	});
 });

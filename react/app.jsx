@@ -14,6 +14,9 @@ domready(function () {
   //Needed for React Developer Tools
   window.React = React;
 
+  var injectTapEventPlugin = require("react-tap-event-plugin");
+  injectTapEventPlugin();
+
   ReactDOM.render(
     (<Router history={browserHistory}>
   		<Route path='/' component={Master} >
