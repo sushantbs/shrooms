@@ -1,38 +1,56 @@
-
-var MongoClient = require('mongodb').MongoClient;
 var ObjectId = require('mongodb').ObjectID;
 var crypto = require('crypto-js');
 var Promise = require('es6-promise').Promise;
+var getDBHandleFromPool = require('./dbHandle');
 
 var Participant = require('./participant');
 
-var Room = function (roomOptions, creator) {
+var Room = function (creator) {
 
-  if (!this.creator) {
+  if (!creator) {
     console.error('Cannot create a room without a creator');
     return null;
   }
 
-  if (!this.roomOptions) {
-    console.error('Cannot create a room without room options');
-    return null;
-  }
-
-  this.creator = new Participant(creator);
+  this.creator = new Participant({name: creator.creatorName});
   this.size = 1;
   this.isFinished = false;
+  this.options = {};
+
+  this._id = null;
+
+  this.initialize();
 }
 
 Room.prototype = {
 
     constructor: Room,
 
+    getState: function () {
+
+      console.log('inside getSTate');
+      var participants = [],
+        context = this.context,
+        participant = creator = this.creator;
+
+      do {
+        console.log('recursive error');
+        participants.push(participant.getState());
+        participant = participant.next;
+      } while (participant && (participant !== creator));
+
+      return {
+          participants: participants,
+          context: context
+      }
+    },
+
     initialize: function () {
       this.first = this.creator;
       this.last = this.creator;
 
-      this.creator.prev = null;
-      this.creator.next = null;
+      this.last.prev = this.first;
+      this.first.next = this.prev;
     },
 
     joinRoom: function (participant) {
@@ -124,35 +142,62 @@ Room.prototype = {
 
     setRules: function (ruleSet) {
 
-      //_.extend(this, ruleSet.plays);
+      var participant = creator = this.creator;
+
+      do {
+        participant.setRules(ruleSet);
+        participant = participant.next;
+      } while (participant && (participant !== creator));
 
       return this;
     },
 
     setContext: function (context) {
 
+      var participant = creator = this.creator;
+
+      do {
+        participant.setContext(context);
+        participant = participant.next;
+      } while (participant && (participant !== creator));
+
       return this;
     },
 
     write: function () {
-
+      var that = this;
       var promise = new Promise(function (resolve, reject) {
 
         getDBHandleFromPool()
-          .then(function (rooms) {
-            rooms.insert(this.getState(), function (err, result) {
+          .then(function (handleObj) {
+            console.log('here');
+            // handleObj is an object that is too complicated to document
+            // at the time of writing. (it could be the beer)
+            // TODO: simplify the handleObj. (or not)
+            if (!that._id) {
+              that._id = that.options._id || ObjectId();
+            }
+
+            handleObj.collection('rooms').insertOne(that.getState(), function (err, result) {
+
+              result.id = ObjectId(that._id);
+              console.log(JSON.stringify(result));
+              handleObj.close();
+
               if (err) {
                 console.log(error);
+                //handleObj.release();
                 return reject(err);
               }
 
-              resolve(result);
+              //handleObj.release();
+              return resolve(result);
             });
           })
           .catch(function (err) {
-            console.log(err);
-            return reject(err);
-          });
+
+          })
+
       });
 
       return promise;

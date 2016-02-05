@@ -6,8 +6,7 @@ var webpackConfig;
 if (process.env.NODE_ENV !== 'development') {
   webpackConfig = {
       entry: {
-      	app: './react/app.jsx',
-        vendor: ['react', 'material-ui']
+      	app: './react/app.jsx'
       },
       output: {
         filename: './public/javascripts/script.js'
@@ -36,8 +35,7 @@ if (process.env.NODE_ENV !== 'development') {
         noParse: [/\.(png|woff|woff2|eot|ttf|svg)$/]
       },
       plugins: [
-      	new ExtractTextPlugin("./public/stylesheets/style.css", {allChunks: true}),
-        new webpack.optimize.CommonsChunkPlugin('vendor', './public/javascripts/vendor.bundle.js')
+      	new ExtractTextPlugin("./public/stylesheets/style.css", {allChunks: true})
       ],
       resolve: {
         extensions: ['', '.js', '.jsx'],

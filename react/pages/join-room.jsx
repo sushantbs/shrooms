@@ -2,7 +2,7 @@ import React, {Component} from 'react';
 import service from 'superagent';
 import _ from 'lodash';
 
-import App from '../apps/poker/app.jsx';
+import App from '../../apps/poker/react/app.jsx';
 
 class JoinRoom extends Component {
 

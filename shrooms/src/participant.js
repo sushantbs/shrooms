@@ -1,5 +1,6 @@
 var crypto = require('crypto');
 var moment = require('moment');
+var _ = require('lodash');
 
 var getSHA1 = function (str) {
 
@@ -17,15 +18,27 @@ function Participant (options) {
 
   this.name = options.name;
   this.createdOn = moment(new Date());
-  this._id = getSHA1(this.createOn.unix().toString() + this.name);
+  this._id = getSHA1(this.createdOn.unix().toString() + this.name);
 }
 
 Participant.prototype = {
 
   constructor: Participant,
 
-  getName: function () {
-    return this.name;
+  getState: function () {
+    return _.extend({name: this.name}, this.context);
+  },
+
+  setContext: function (context) {
+
+    this.context = context;
+
+    return this;
+  },
+
+  setRules: function (ruleSet) {
+
+    return this;
   }
 }
 

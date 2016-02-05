@@ -3,7 +3,7 @@ var router = express.Router();
 var debug = require('debug')('api');
 var Promise = require('es6-promise').Promise;
 
-var Shrooms = require('../shrooms');
+var Room = require('../shrooms');
 
 var MongoClient = require('mongodb').MongoClient;
 var ObjectId = require('mongodb').ObjectID;
@@ -29,23 +29,6 @@ var cardValue = {
 	'A': 14
 };
 
-function connectToDB () {
-
-	var promise = new Promise(function (resolve, reject) {
-
-		MongoClient.connect('mongodb://localhost:27017/rooms', function (err, dbhandle) {
-
-			if (err) {
-				return reject(err);
-			}
-
-			return resolve(dbhandle);
-		});
-	});
-
-	return promise;
-}
-
 
 router.post('/create', function (req, res, next) {
 
@@ -63,21 +46,23 @@ router.post('/create', function (req, res, next) {
 
 		case 1:
 			roomObj
-				.setRules(require('../app/poker/rules'))
+				.setRules()
 				.setContext(context)
 				.write()
 				.then(function (result) {
 
 					var id = result.id;
 
+					console.log('id ' + id);
 					req.roomsession.roomId = id;
 					req.roomsession.participantName = result.participantName;
 
-					ROOMS[id] = roomObj;
+					SHROOMCOLLECTION[id] = roomObj;
 
-					res.status(200).send({status: 'success', data: result});
+					res.status(200).send({status: 'success', data: result.id});
 				})
 				.catch(function (err) {
+					console.error(err);
 					res.status(500).send({status: 'error', error: 'Error while creating the room'});
 				});
 
@@ -100,7 +85,7 @@ router.post('/join', function (req, res, next) {
 	if (existingRoomId) {
 		if ((existingRoomId === joinRoomId) && (existingName === postBody.name)) {
 			res.redirect('/room/' + joinRoomId);
-		} else if () {
+		} else {
 			res.status(500).send({status: 'error', error: 'You are part of another room or are part of this room as another participant.'});
 		}
 	} else if (roomObj.isClosed) {
@@ -130,7 +115,7 @@ router.post('/leave', function (req, res, next) {
 	roomObj = ROOMS[roomId];
 
 	roomObj
-		.leaveRoom({name: })
+		.leaveRoom({name: participantName})
 		.write()
 		.then(function (result) {
 			res.status(200).send({status: 'success', data: result});
