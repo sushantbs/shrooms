@@ -53,9 +53,8 @@ router.post('/create', function (req, res, next) {
 
 					var id = result.id;
 
-					console.log('id ' + id);
 					req.roomsession.roomId = id;
-					req.roomsession.participantName = result.participantName;
+					req.roomsession.participantName = creator;
 
 					SHROOMCOLLECTION[id] = roomObj;
 
@@ -72,6 +71,22 @@ router.post('/create', function (req, res, next) {
 			console.error('Rules set invalid');
 			return res.status(500).send({status: 'error', error: 'Rules set invalid'});
 	}
+});
+
+router.get('/state', function (req, res, next) {
+
+	console.log(req.roomsession);
+
+	var roomId = req.roomsession.roomId,
+		participant = req.roomsession.participantName,
+		roomObj = SHROOMCOLLECTION[roomId];
+
+	if (roomObj && roomObj.hasParticipant(participant)) {
+		return res.status(200).send({status: 'success', data: roomObj.getState()});
+	} else {
+		return res.status(500).send({status: 'error', error: 'Error getting room state'});
+	}
+
 });
 
 router.post('/join', function (req, res, next) {

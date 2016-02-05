@@ -6,6 +6,7 @@ import {Router, Route, browserHistory, Redirect, IndexRoute, Link} from 'react-r
 import Master from './master.jsx';
 import CreateRoom from './pages/create-room.jsx';
 import JoinRoom from './pages/join-room.jsx';
+import Shroom from './pages/room-app.jsx';
 
 domready(function () {
 
@@ -22,6 +23,7 @@ domready(function () {
   		<Route path='/' component={Master} >
   			<Route path='create' component={CreateRoom} />
   			<Route path='join/:roomId' component={JoinRoom} />
+        <Route path='room/:roomId' component={Shroom} />
   		</Route>
   	</Router>), document.getElementById('content-section'));
 });

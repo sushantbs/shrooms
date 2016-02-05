@@ -203,8 +203,19 @@ Room.prototype = {
       return promise;
     },
 
-    getParticipantList: function () {
+    hasParticipant: function (participantName) {
 
+      var participant = creator = this.creator;
+
+      do {
+        if (participant.name === participantName) {
+          return true;
+        };
+
+        participant = participant.next;
+      } while (participant && (participant !== creator));
+
+      return false;
     },
 
     dispose: function () {

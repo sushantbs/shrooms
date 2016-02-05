@@ -41,7 +41,7 @@ class PokerRoom extends Component {
 				}
 
 				browserHistory.push({
-					pathname: '/join/' + response.body.data
+					pathname: '/room/' + response.body.data
 				});
 			});
 	}
