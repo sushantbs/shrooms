@@ -18,7 +18,7 @@ function Participant (options) {
 
   this.name = options.name;
   this.createdOn = moment(new Date());
-  this._id = getSHA1(this.createdOn.unix().toString() + this.name);
+  this._id = options._id || getSHA1(this.createdOn.unix().toString() + this.name);
 }
 
 Participant.prototype = {
@@ -26,7 +26,7 @@ Participant.prototype = {
   constructor: Participant,
 
   getState: function () {
-    return _.extend({name: this.name}, this.context);
+    return _.extend({name: this.name, _id: this._id}, this.context);
   },
 
   setContext: function (context) {

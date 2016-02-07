@@ -1,23 +1,28 @@
 var ObjectId = require('mongodb').ObjectID;
 var crypto = require('crypto-js');
 var Promise = require('es6-promise').Promise;
-var getDBHandleFromPool = require('./dbHandle');
+var getHandle = require('./dbHandle').getHandle;
 
 var Participant = require('./participant');
 
-var Room = function (creator) {
+var Room = function (creator, options) {
 
   if (!creator) {
     console.error('Cannot create a room without a creator');
     return null;
   }
 
-  this.creator = new Participant({name: creator.creatorName});
+  if (creator instanceof Participant) {
+    this.creator = creator;
+  } else {
+    this.creator = new Participant({name: creator});
+  }
+
   this.size = 1;
   this.isFinished = false;
   this.options = {};
 
-  this._id = null;
+  this._id = (options && ObjectId(options._id)) || ObjectId();
 
   this.initialize();
 }
@@ -28,20 +33,20 @@ Room.prototype = {
 
     getState: function () {
 
-      console.log('inside getSTate');
       var participants = [],
         context = this.context,
         participant = creator = this.creator;
 
       do {
-        console.log('recursive error');
         participants.push(participant.getState());
         participant = participant.next;
       } while (participant && (participant !== creator));
 
       return {
-          participants: participants,
-          context: context
+          'creator': this.creator.getState(),
+          'participants': participants,
+          'context': context,
+          '_id': this._id
       }
     },
 
@@ -161,36 +166,31 @@ Room.prototype = {
         participant = participant.next;
       } while (participant && (participant !== creator));
 
+      this.context = context;
+
       return this;
     },
 
     write: function () {
       var that = this;
       var promise = new Promise(function (resolve, reject) {
-
-        getDBHandleFromPool()
+        getHandle()
           .then(function (handleObj) {
-            console.log('here');
             // handleObj is an object that is too complicated to document
             // at the time of writing. (it could be the beer)
             // TODO: simplify the handleObj. (or not)
-            if (!that._id) {
-              that._id = that.options._id || ObjectId();
-            }
-
-            handleObj.collection('rooms').insertOne(that.getState(), function (err, result) {
+            handleObj.handle.insertOne(that.getState(), function (err, result) {
 
               result.id = ObjectId(that._id);
               console.log(JSON.stringify(result));
-              handleObj.close();
+
+              handleObj.release();
 
               if (err) {
                 console.log(error);
-                //handleObj.release();
                 return reject(err);
               }
 
-              //handleObj.release();
               return resolve(result);
             });
           })
@@ -203,12 +203,16 @@ Room.prototype = {
       return promise;
     },
 
-    hasParticipant: function (participantName) {
+    read: function () {
+
+    },
+
+    hasParticipant: function (participantId) {
 
       var participant = creator = this.creator;
 
       do {
-        if (participant.name === participantName) {
+        if (participant._id === participantId) {
           return true;
         };
 
