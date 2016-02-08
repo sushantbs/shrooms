@@ -43,9 +43,11 @@ export default class Shroom extends Component {
           })
         }
 
-        socket.on('roomstate', (roomState) => this.setState({...roomState}));
-
         socket.emit('init', {crypt: rediskey});
+      });
+
+      socket.on('roomstate', (roomState) => {
+        this.setState({...roomState})
       });
     }
   }
@@ -76,7 +78,7 @@ export default class Shroom extends Component {
   render () {
     return (
       <div className='content-block room-app'>
-        <ParticipantTile list={this.state.participants} />
+        <ParticipantTile participants={this.state.participants} />
         <TextField style={{width: '100%'}} floatingLabelText='Share Link' value={'http://' + location.host + '/join/' + this.props.params.roomId} />
       </div>
     );

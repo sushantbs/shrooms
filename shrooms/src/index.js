@@ -22,7 +22,7 @@ var Room = function (creator, options) {
   this.isFinished = false;
   this.options = {};
 
-  this._id = (options && ObjectId(options._id)) || ObjectId();
+  this._id = (options && options.id && ObjectId(options.id)) || ObjectId();
 
   this.initialize();
 }
@@ -30,6 +30,10 @@ var Room = function (creator, options) {
 Room.prototype = {
 
     constructor: Room,
+
+    getId: function () {
+      return this._id.toString();
+    },
 
     getState: function () {
 
@@ -179,10 +183,12 @@ Room.prototype = {
             // handleObj is an object that is too complicated to document
             // at the time of writing. (it could be the beer)
             // TODO: simplify the handleObj. (or not)
-            handleObj.handle.insertOne(that.getState(), function (err, result) {
+            var state = that.getState();
+            handleObj.handle.insertOne(state, function (err, result) {
 
-              result.id = ObjectId(that._id);
-              console.log(JSON.stringify(result));
+
+              console.log('object wriiten to DB: ' + JSON.stringify(result, null, 4));
+              result._id = state._id.toString();
 
               handleObj.release();
 
@@ -195,7 +201,7 @@ Room.prototype = {
             });
           })
           .catch(function (err) {
-
+            return reject(err);
           })
 
       });

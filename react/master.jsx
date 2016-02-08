@@ -2,7 +2,7 @@ import React, {Component} from 'react';
 import {Link} from 'react-router';
 
 import ThemeManager from 'material-ui/lib/styles/theme-manager';
-import DarkTheme from 'material-ui/lib/styles/raw-themes/dark-raw-theme';
+import DarkTheme from 'material-ui/lib/styles/raw-themes/light-raw-theme';
 import AppBar from 'material-ui/lib/app-bar';
 import AppCanvas from 'material-ui/lib/app-canvas';
 

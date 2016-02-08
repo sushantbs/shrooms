@@ -62,30 +62,31 @@ module.exports = function (io) {
 					.write()
 					.then(function (result) {
 
-						var id = result.id;
+						var id = result._id;
 
 						req.roomsession.roomId = id;
 						req.roomsession.participantId = roomCreator._id;
 						req.roomsession.isCreator = true;
 
-						var roomSocket = SocketNamespace(io, id);
+						console.log('client session obj post room creation: ' + JSON.stringify(req.roomsession, null, 4));
+						var roomSocket = SocketNamespace(io, roomObj);
 
 						SHROOMCOLLECTION[id] = {
 							room: roomObj,
 							socketListener: roomSocket
 						};
 
-						res.status(200).send({status: 'success', data: result.id});
+						res.status(200).send({status: 'success', data: id});
 					})
 					.catch(function (err) {
-						console.error(err);
+						console.log(err);
 						res.status(500).send({status: 'error', error: 'Error while creating the room'});
 					});
 
 				break;
 
 			default:
-				console.error('Rules set invalid');
+				console.log('Rules set invalid');
 				return res.status(500).send({status: 'error', error: 'Rules set invalid'});
 		}
 	});
@@ -95,24 +96,34 @@ module.exports = function (io) {
 		var roomId = req.roomsession.roomId,
 			participantId = req.roomsession.participantId;
 
+		console.log('client session from cookie: ' + JSON.stringify(req.roomsession, null, 4));
 		roomObj = SHROOMCOLLECTION[roomId] && SHROOMCOLLECTION[roomId].room;
 
 		if (roomObj) {
+
+			console.log('room exists in memory: ' + roomObj.getState());
 			if (roomObj.hasParticipant(participantId)) {
 				return res.status(200).send({status: 'success', data: roomObj.getState()});
 			} else {
 				return res.status(200).send({status: 'error', error: 'You are not part of this room. Try joining this room'});
 			}
 		} else {
+
+			console.log('room not found in memory!');
 			dbHandle.getHandle()
 				.then(function (handleObj) {
 					var cursor = handleObj.handle.find({'_id': ObjectId(roomId.toString())});
+					console.log('read from db complete');
+
 					cursor.each(function (err, result) {
 						if (result) {
-							var creator = new Participant({name: result.creator.name, _id: result.creator._id});
-							roomObj = new Room(creator, {id: result._id});
 
-							var roomSocket = SocketNamespace(io, roomId);
+							console.log(JSON.stringify(result, null, 4));
+
+							var creator = new Participant({name: result.creator.name, _id: result.creator._id});
+							roomObj = new Room(creator, {id: result._id.toString()});
+
+							var roomSocket = SocketNamespace(io, roomObj);
 
 							SHROOMCOLLECTION[roomId] = {
 								room: roomObj,
@@ -122,6 +133,10 @@ module.exports = function (io) {
 							return res.status(200).send({status: 'success', data: roomObj.getState()});
 						}
 					});
+				})
+				.catch(function (err) {
+					console.error(err);
+					return res.status(500).send({status: 'error', error: err});
 				});
 		}
 
