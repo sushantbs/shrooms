@@ -87,7 +87,7 @@ class PokerRoom extends Component {
 		}
 
 		return (
-			<div style={{padding: 10}}>
+			<div className='content-block'>
 				<form>
 					<SelectField value={this.state.rule} onChange={this.updateRule.bind(this)}>
 						{_.map(this.props.rules, (ruleObj, index) => (<MenuItem key={index} value={ruleObj.value} primaryText={ruleObj.text} />))}

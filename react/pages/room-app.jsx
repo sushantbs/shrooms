@@ -2,6 +2,7 @@ import React, {Component} from 'react';
 import {browserHistory} from 'react-router';
 import service from 'superagent';
 import _ from 'lodash';
+import TextField from 'material-ui/lib/text-field';
 import ParticipantTile from '../components/participant-tile.jsx';
 
 export default class Shroom extends Component {
@@ -28,7 +29,7 @@ export default class Shroom extends Component {
         }
       });
 
-      socket.on('connect', function () {
+      socket.on('connect', () => {
 
         if (typeof GetCookie !== 'undefined') {
           var rediskey = GetCookie('roomsession'); //http://msdn.microsoft.com/en-us/library/ms533693(v=vs.85).aspx
@@ -42,9 +43,7 @@ export default class Shroom extends Component {
           })
         }
 
-        socket.on('roomstate', function () {
-
-        });
+        socket.on('roomstate', (roomState) => this.setState({...roomState}));
 
         socket.emit('init', {crypt: rediskey});
       });
@@ -56,7 +55,9 @@ export default class Shroom extends Component {
     service
       .get('/api/state')
       .end((err, response) => {
+        var roomState = response.body.data;
         this.makeSocketConnection();
+        this.setState({...roomState});
       });
   }
 
@@ -73,6 +74,11 @@ export default class Shroom extends Component {
   }
 
   render () {
-    return (<ParticipantTile list={this.state.participants} />);
+    return (
+      <div className='content-block room-app'>
+        <ParticipantTile list={this.state.participants} />
+        <TextField style={{width: '100%'}} floatingLabelText='Share Link' value={'http://' + location.host + '/join/' + this.props.params.roomId} />
+      </div>
+    );
   }
 }

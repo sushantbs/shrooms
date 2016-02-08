@@ -21,8 +21,7 @@ Socket.prototype.initialize = function (app) {
         secret: 'N501tgoe$4newL!fe'
       }, message.crypt);
 
-      sockets[socket.id] = sessionObj;
-      socket.join(sessionObj.roomId);
+      sockets[socket.id] = sessionObj;      
     });
 
     socket.on('disconnect', function(){
