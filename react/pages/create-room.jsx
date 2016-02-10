@@ -6,7 +6,7 @@ import SelectField from 'material-ui/lib/select-field';
 import MenuItem from 'material-ui/lib/menus/menu-item';
 import RaisedButton from 'material-ui/lib/raised-button';
 
-class PokerRoom extends Component {
+class CreateRoom extends Component {
 
 	state = {
 		name: '',
@@ -16,7 +16,11 @@ class PokerRoom extends Component {
 	}
 
 	static defaultProps = {
-		rules: [{text: 'Select the Rules', value: -1}, {text: 'Texas Holdem Poker', value: 1}, {text: 'Black Jack', value: 2}]
+		rules: [
+			{text: 'Select the Rules', value: -1},
+			{text: 'Texas Holdem Poker', value: 1},
+			{text: 'Black Jack', value: 2}
+		]
 	}
 
 	submitForm () {
@@ -81,8 +85,8 @@ class PokerRoom extends Component {
 
 		if (this.state.rule === 1 && this.state.context) {
 			ruleBasedFields = [
-				(<TextField floatingLabelText='Buy In' value={this.state.context.buyIn} onChange={this.updateContext.bind(this, 'buyId')} onEnterKeyDown={this.submitForm.bind(this)} />),
-				(<TextField floatingLabelText='Small blinds' value={this.state.context.small} onChange={this.updateContext.bind(this, 'small')} onEnterKeyDown={this.submitForm.bind(this)} />)
+				(<TextField key='buyin' floatingLabelText='Buy In' value={this.state.context.buyIn} onChange={this.updateContext.bind(this, 'buyId')} onEnterKeyDown={this.submitForm.bind(this)} />),
+				(<TextField key='blinds' floatingLabelText='Small blinds' value={this.state.context.small} onChange={this.updateContext.bind(this, 'small')} onEnterKeyDown={this.submitForm.bind(this)} />)
 			]
 		}
 
@@ -103,4 +107,4 @@ class PokerRoom extends Component {
 	}
 }
 
-export default PokerRoom;
+export default CreateRoom;

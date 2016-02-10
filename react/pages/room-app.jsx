@@ -47,6 +47,7 @@ export default class Shroom extends Component {
       });
 
       socket.on('roomstate', (roomState) => {
+        debugger;
         this.setState({...roomState})
       });
     }

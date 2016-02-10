@@ -7,6 +7,15 @@ var Participant = require('./participant');
 
 var Room = function (creator, options) {
 
+  if (options._id) {
+    this._id = ObjectId(options._id);
+    this._created = true;
+  }
+  else {
+    this._id = ObjectId();
+    this._created = false;
+  }
+
   if (!creator) {
     console.error('Cannot create a room without a creator');
     return null;
@@ -18,11 +27,9 @@ var Room = function (creator, options) {
     this.creator = new Participant({name: creator});
   }
 
-  this.size = 1;
-  this.isFinished = false;
-  this.options = {};
-
-  this._id = (options && options.id && ObjectId(options.id)) || ObjectId();
+  this.name = options.name;
+  this.rule = options.rule;
+  this.context = options.context;
 
   this.initialize();
 }
@@ -35,10 +42,17 @@ Room.prototype = {
       return this._id.toString();
     },
 
+    getInfo: function () {
+      return {
+        name: this.name,
+        rule: this.rule,
+        context: this.context
+      }
+    },
+
     getState: function () {
 
       var participants = [],
-        context = this.context,
         participant = creator = this.creator;
 
       do {
@@ -47,14 +61,15 @@ Room.prototype = {
       } while (participant && (participant !== creator));
 
       return {
+          'info': this.getInfo(),
           'creator': this.creator.getState(),
           'participants': participants,
-          'context': context,
           '_id': this._id
       }
     },
 
     initialize: function () {
+
       this.first = this.creator;
       this.last = this.creator;
 
@@ -64,51 +79,23 @@ Room.prototype = {
 
     joinRoom: function (participant) {
 
-      var np = new Participant(participant);
+      var np;
+
+      if (!(participant instanceof Participant)) {
+        np = new Participant(participant);
+      } else {
+        np = participant;
+      }
 
       np.prev = this.last;
-      np.next = null
+      np.next = this.first;
+
+      this.first.prev = np;
       this.last.next = np;
 
       this.last = np;
 
-      this.size += 1;
-
-      connectToDB()
-        .then(function (dbhandle) {
-          dbhandle.collection('rooms').updateOne({_id: objectId}, {
-            $addToSet: {participants: {name: postBody.name, isCreator: false, worth: postBody.buyIn}}
-          }, function (err, update) {
-
-            if (err) {
-              console.log(err);
-              res.status(500).end('Error updating the Room');
-              return;
-            }
-
-            if (!update.result.n) {
-              console.log('No result');
-              res.status(500).end('Room not found');
-              return;
-            }
-
-            dbhandle.collection('rooms').findOne({_id: objectId}, function (err, fetch) {
-
-              if (err) {
-                console.log(err);
-                res.status(500).send(err);
-                return;
-              }
-
-              dbhandle.close();
-              res.send({status: 'success', data: fetch});
-            });
-          });
-        })
-    		.catch(function (err) {
-    			console.log(err);
-    			res.status(500).send(err);
-    		});
+      return this;
     },
 
     leaveRoom: function (participant) {
@@ -184,21 +171,41 @@ Room.prototype = {
             // at the time of writing. (it could be the beer)
             // TODO: simplify the handleObj. (or not)
             var state = that.getState();
-            handleObj.handle.insertOne(state, function (err, result) {
 
+            if (that._created) {
+              handleObj.handle.update({_id: state._id}, state, function (err, result) {
 
-              console.log('object wriiten to DB: ' + JSON.stringify(result, null, 4));
-              result._id = state._id.toString();
+                console.log('object updated in DB: ' + JSON.stringify(result, null, 4));
+                result._id = state._id.toString();
 
-              handleObj.release();
+                handleObj.release();
 
-              if (err) {
-                console.log(error);
-                return reject(err);
-              }
+                if (err) {
+                  console.log(error);
+                  return reject(err);
+                }
 
-              return resolve(result);
-            });
+                return resolve(result);
+              });
+
+            } else {
+
+              handleObj.handle.insertOne(state, function (err, result) {
+
+                console.log('object added to DB: ' + JSON.stringify(result, null, 4));
+                result._id = state._id.toString();
+                that._created = true;
+
+                handleObj.release();
+
+                if (err) {
+                  console.log(error);
+                  return reject(err);
+                }
+
+                return resolve(result);
+              });
+            }
           })
           .catch(function (err) {
             return reject(err);

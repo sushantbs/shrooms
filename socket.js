@@ -29,7 +29,7 @@ Socket.prototype.initialize = function (app) {
       }, message.crypt);
 
       sockets[socket.id] = sessionObj;
-      socket.emit('roomstate', that.roomObj.getState());
+      that.emitState();
     });
 
     socket.on('disconnect', function(){
@@ -42,10 +42,9 @@ Socket.prototype.getSocket = function () {
   return this.socketNS;
 }
 
-Socket.prototype.emitState = function (roomId, state) {
-  this.socketNS.emit('state', state);
+Socket.prototype.emitState = function () {
+  this.socketNS.emit('roomstate', this.roomObj.getState());
 }
-
 
 module.exports = function (io, roomId) {
 
