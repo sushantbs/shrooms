@@ -21,36 +21,55 @@ export default class Shroom extends Component {
     if (roomId) {
 
       console.log('connecting to ' + roomId);
-      var socket = io.connect('/' + roomId);
-
-      socket.on('error', (error) => {
-        if (error === 'Invalid namespace') {
-          this.restoreRoom();
-        }
-      });
-
-      socket.on('connect', () => {
-
-        if (typeof GetCookie !== 'undefined') {
-          var rediskey = GetCookie('roomsession'); //http://msdn.microsoft.com/en-us/library/ms533693(v=vs.85).aspx
-        } else {
-          var cookieStr = document.cookie;
-          var cookiePairs = cookieStr.split(';');
-          _.forEach(cookiePairs, (pair) => {
-            if (_.trim(pair.split('=')[0]) === 'roomsession') {
-              rediskey = _.trim(pair.split('=')[1])
-            };
-          })
-        }
-
-        socket.emit('init', {crypt: rediskey});
-      });
-
-      socket.on('roomstate', (roomState) => {
-        debugger;
-        this.setState({...roomState})
-      });
+      this.socket = io.connect('/' + roomId);
+      this.addSocketListeners();
     }
+  }
+
+  setReconnectionTimer () {
+    //setTimeout(() => (this.makeSocketConnection()), 3000);
+  }
+
+  addSocketListeners () {
+
+    var socket = this.socket;
+
+    socket.on('error', (error) => {
+      console.log('Socket connection error - ' + error);
+      if (error === 'Invalid namespace') {
+        this.restoreRoom();
+      } else {
+        this.setReconnectionTimer();
+      }
+    });
+
+    socket.on('connect', () => {
+      console.log('Socket connected');
+      if (typeof GetCookie !== 'undefined') {
+        //http://msdn.microsoft.com/en-us/library/ms533693(v=vs.85).aspx
+        var cryptKey = GetCookie('roomsession');
+      } else {
+        var cookieStr = document.cookie;
+        var cookiePairs = cookieStr.split(';');
+        _.forEach(cookiePairs, (pair) => {
+          if (_.trim(pair.split('=')[0]) === 'roomsession') {
+            cryptKey = _.trim(pair.split('=')[1])
+          };
+        })
+      }
+
+      socket.emit('init', {crypt: cryptKey});
+    });
+
+    socket.on('disconnect', () => {
+      console.log('Socket disconnected');
+      this.setReconnectionTimer();
+    });
+
+    socket.on('roomstate', (roomState) => {
+      console.log('On roomstate');
+      this.setState({...roomState})
+    });
   }
 
   restoreRoom () {
@@ -71,9 +90,7 @@ export default class Shroom extends Component {
 
   componentWillUnmount () {
 
-    socket.off('roomstate', function () {
-
-    });
+    socket.removeAllListeners('roomstate');
   }
 
   render () {

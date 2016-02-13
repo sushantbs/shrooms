@@ -39,13 +39,11 @@ class CreateRoom extends Component {
 			return this.setState({error: 'Names are important'});
 		}
 
-		debugger;
 		service
 			.post('/api/join')
 			.send({name: this.state.participantName, roomId: this.state.roomId})
 			.end(function (err, response) {
 
-				debugger;
 				if (err) {
 					t.setState({error: 'Error'});
 					return;

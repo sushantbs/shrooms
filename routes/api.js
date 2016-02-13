@@ -51,6 +51,12 @@ function restoreFromDB (roomId, io) {
 
 						var roomSocket = SocketNamespace(io, roomObj);
 
+						_.forEach(result.participants, function (participant) {
+							if (participant._id !== result.creator._id) {
+								roomObj.joinRoom(participant);
+							}
+						});
+
 						SHROOMCOLLECTION[roomId] = {
 							room: roomObj,
 							socketListener: roomSocket
@@ -217,6 +223,7 @@ module.exports = function (io) {
 					req.roomsession.roomId = joinRoomId;
 					req.roomsession.participantId = participant._id;
 
+					console.log('joined room: ' + JSON.stringify(req.roomsession, null, 4))
 					res.status(200).send({status: 'success', data: result._id});
 
 					roomEntry.socketListener.emitState();
