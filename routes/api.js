@@ -12,7 +12,7 @@ var ObjectId = require('mongodb').ObjectID;
 var _ = require('lodash');
 var calulateWinnings = require('../lib/winnings-calculator').calculateWinnings;
 
-var SocketNamespace = require('../socket');
+var SocketManager = require('../socket');
 
 var SHROOMCOLLECTION = {};
 var SOCKETS = {};
@@ -32,55 +32,80 @@ var cardValue = {
 	'K': 13,
 	'A': 14
 };
+var shuffleDeck = function () {
 
-function restoreFromDB (roomId, io) {
-	var p = new Promise(function (resolve, reject) {
-		dbHandle
-			.getHandle()
-			.then(function (handleObj) {
-				var cursor = handleObj.handle.find({'_id': ObjectId(roomId.toString())});
-				console.log('read from db complete');
+	var deck = [
+		'A:1', '2:1', '3:1', '4:1', '5:1', '6:1', '7:1', '8:1', '9:1', '10:1', 'J:1', 'Q:1', 'K:1',
+		'A:2', '2:2', '3:2', '4:2', '5:2', '6:2', '7:2', '8:2', '9:2', '10:2', 'J:2', 'Q:2', 'K:2',
+		'A:3', '2:3', '3:3', '4:3', '5:3', '6:3', '7:3', '8:3', '9:3', '10:3', 'J:3', 'Q:3', 'K:3',
+		'A:4', '2:4', '3:4', '4:4', '5:4', '6:4', '7:4', '8:4', '9:4', '10:4', 'J:4', 'Q:4', 'K:4'
+	],
+	temp;
 
-				cursor.each(function (err, result) {
-					if (result) {
+	for (var m = 0; m < 500; m += 1) {
 
-						console.log(JSON.stringify(result, null, 4));
+		i = Math.floor(parseInt((Math.random() * 200), 10) % 52);
+		j = Math.floor(parseInt((Math.random() * 200), 10) % 52);
 
-						var creator = new Participant({name: result.creator.name, _id: result.creator._id});
-						roomObj = new Room(creator, {name: result.info.name, rule: result.info.rule, context: result.info.context, _id: result._id.toString()});
+		temp = deck[i];
+		deck[i] = deck[j];
+		deck[j] = temp;
+	}
 
-						var roomSocket = SocketNamespace(io, roomObj);
+	console.log(deck);
 
-						_.forEach(result.participants, function (participant) {
-							if (participant._id !== result.creator._id) {
-								roomObj.joinRoom(participant);
-							}
-						});
-
-						SHROOMCOLLECTION[roomId] = {
-							room: roomObj,
-							socketListener: roomSocket
-						};
-
-						resolve(roomObj);
-
-					} else {
-						console.log('room not found in db');
-						reject('Room not found in DB');
-					}
-
-				});
-			})
-			.catch(function (err) {
-				console.error(err);
-				reject(err);
-			});
-	});
-
-	return p;
+	return deck;
 }
 
+
 module.exports = function (io) {
+
+	var socketManager = new SocketManager(io);
+
+	var readRoomService = function (roomId) {
+
+		var p = new Promise(function (resolve, reject) {
+			dbHandle
+				.getHandle()
+				.then(function (handleObj) {
+					var cursor = handleObj.handle.find({'_id': ObjectId(roomId.toString())});
+					console.log('read from db complete');
+
+					cursor.each(function (err, result) {
+						if (result) {
+
+							console.log(JSON.stringify(result, null, 4));
+
+							var creator = new Participant({name: result.creator.name, _id: result.creator._id});
+							roomObj = new Room(creator, {name: result.info.name, rule: result.info.rule, context: result.info.context, _id: result._id.toString()});
+
+							_.forEach(result.participants, function (participant) {
+								if (participant._id !== result.creator._id) {
+									roomObj.joinRoom(participant);
+								}
+							});
+
+							socketManager.manageRoomSocketNS(roomObj);
+							
+							SHROOMCOLLECTION[roomId] = roomObj;
+
+							resolve(roomObj);
+
+						} else {
+							console.log('room not found in db');
+							reject('Room not found in DB');
+						}
+
+					});
+				})
+				.catch(function (err) {
+					console.error(err);
+					reject(err);
+				});
+		});
+
+		return p;
+	}
 
 	router.post('/create', function (req, res, next) {
 
@@ -111,12 +136,9 @@ module.exports = function (io) {
 						req.roomsession.isCreator = true;
 
 						console.log('client session obj post room creation: ' + JSON.stringify(req.roomsession, null, 4));
-						var roomSocket = SocketNamespace(io, roomObj);
+						socketManager.manageRoomSocketNS(roomObj);
 
-						SHROOMCOLLECTION[id] = {
-							room: roomObj,
-							socketListener: roomSocket
-						};
+						SHROOMCOLLECTION[id] = roomObj;
 
 						res.status(200).send({status: 'success', data: id});
 					})
@@ -136,16 +158,14 @@ module.exports = function (io) {
 	router.get('/info', function (req, res, next) {
 
 		var roomId = req.query.roomId,
-			roomEntry = SHROOMCOLLECTION[roomId],
-			roomObj;
+			roomObj = SHROOMCOLLECTION[roomId];
 
 		console.log('fetch room info for ' + roomId);
-		if (roomEntry) {
-			roomObj = roomEntry.room;
+		if (roomObj) {
 			res.status(200).send({status: 'success', data: roomObj.getInfo()});
 		} else {
 			console.log('room not found in memory!');
-			restoreFromDB(roomId, io)
+			readRoomService(roomId, io)
 				.then(function (roomObj) {
 					res.status(500).send({status: 'success', data: roomObj.getInfo()});
 				})
@@ -161,7 +181,7 @@ module.exports = function (io) {
 			participantId = req.roomsession.participantId;
 
 		console.log('client session from cookie: ' + JSON.stringify(req.roomsession, null, 4));
-		roomObj = SHROOMCOLLECTION[roomId] && SHROOMCOLLECTION[roomId].room;
+		roomObj = SHROOMCOLLECTION[roomId];
 
 		if (roomObj) {
 
@@ -174,7 +194,7 @@ module.exports = function (io) {
 		} else {
 
 			console.log('room not found in memory!');
-			restoreFromDB(roomId, io)
+			readRoomService(roomId, io)
 				.then(function (roomObj) {
 					if (roomObj.hasParticipant(participantId)) {
 						return res.status(200).send({status: 'success', data: roomObj.getState()});
@@ -195,13 +215,11 @@ module.exports = function (io) {
 			joinRoomId = postBody.roomId
 			existingRoomId = req.roomsession.roomId,
 			existingName = req.roomsession.participantName,
-			roomEntry = SHROOMCOLLECTION[joinRoomId];
+			roomObj = SHROOMCOLLECTION[joinRoomId];
 
-		if (!roomEntry) {
+		if (!roomObj) {
 			return res.status(500).send({status: 'error', error: 'Oops! Looks like the is not available right now. Please try again later.'});
 		}
-
-		var roomObj = roomEntry.room;
 
 		if (existingRoomId) {
 			if ((existingRoomId === joinRoomId) && (existingName === postBody.name)) {
@@ -298,31 +316,6 @@ module.exports = function (io) {
 				res.status(500).send(err);
 			});
 	});
-
-	var shuffleDeck = function () {
-
-		var deck = [
-			'A:1', '2:1', '3:1', '4:1', '5:1', '6:1', '7:1', '8:1', '9:1', '10:1', 'J:1', 'Q:1', 'K:1',
-			'A:2', '2:2', '3:2', '4:2', '5:2', '6:2', '7:2', '8:2', '9:2', '10:2', 'J:2', 'Q:2', 'K:2',
-			'A:3', '2:3', '3:3', '4:3', '5:3', '6:3', '7:3', '8:3', '9:3', '10:3', 'J:3', 'Q:3', 'K:3',
-			'A:4', '2:4', '3:4', '4:4', '5:4', '6:4', '7:4', '8:4', '9:4', '10:4', 'J:4', 'Q:4', 'K:4'
-		],
-		temp;
-
-		for (var m = 0; m < 500; m += 1) {
-
-			i = Math.floor(parseInt((Math.random() * 200), 10) % 52);
-			j = Math.floor(parseInt((Math.random() * 200), 10) % 52);
-
-			temp = deck[i];
-			deck[i] = deck[j];
-			deck[j] = temp;
-		}
-
-		console.log(deck);
-
-		return deck;
-	}
 
 	router.post('/deal', function (req, res, next) {
 

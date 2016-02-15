@@ -75,6 +75,8 @@ Room.prototype = {
 
       this.last.prev = this.first;
       this.first.next = this.prev;
+
+      this.creator.markAsCreator();
     },
 
     joinRoom: function (participant) {
@@ -96,6 +98,22 @@ Room.prototype = {
       this.last = np;
 
       return this;
+    },
+
+    pushRoomState: function () {
+      this.socketNS.emitState();
+    },
+
+    pushPrivateStates: function () {
+      var participant = first = this.first;
+
+      do {
+        if (participant._id === participantId) {
+          participant.pushPrivate();
+        };
+
+        participant = participant.next;
+      } while (participant && (participant !== first));
     },
 
     leaveRoom: function (participant) {
@@ -126,7 +144,7 @@ Room.prototype = {
 
     closeRoom: function (roomId) {
       this.isFinished = true;
-      var pr = this.start;
+      var pr = this.first;
 
       while(pr) {
         this.leaveRoom(pr);
@@ -134,6 +152,23 @@ Room.prototype = {
       }
 
       this.dispose();
+    },
+
+    setSocketNS: function (socketNS) {
+      this.socketNS = socketNS;
+      socketNS.initialize();
+    },
+
+    bindSocketToParticipant: function (socket, participantId) {
+
+      console.log('binding socket to ' + participantId);
+      var participant = this.getParticipant(participantId);
+
+      if (participant) {
+        participant.setSocket(socket);
+      }
+
+      this.pushRoomState();
     },
 
     setRules: function (ruleSet) {
@@ -220,9 +255,24 @@ Room.prototype = {
 
     },
 
+    getParticipant: function (participantId) {
+
+      var participant = first = this.first;
+
+      do {
+        if (participant._id === participantId) {
+          return participant;
+        };
+
+        participant = participant.next;
+      } while (participant && (participant !== first));
+
+      return false;
+    },
+
     hasParticipant: function (participantId) {
 
-      var participant = creator = this.creator;
+      var participant = first = this.first;
 
       do {
         if (participant._id === participantId) {
@@ -230,7 +280,7 @@ Room.prototype = {
         };
 
         participant = participant.next;
-      } while (participant && (participant !== creator));
+      } while (participant && (participant !== first));
 
       return false;
     },

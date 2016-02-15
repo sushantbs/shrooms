@@ -1,15 +1,14 @@
 var csession = require('client-sessions');
 var sockets = {};
 
-function Socket (io, roomObj) {
+function SocketNamespace (io, roomObj) {
+
   this.io = io;
   this.roomId = roomObj.getId();
   this.roomObj = roomObj;
-
-  this.initialize();
 }
 
-Socket.prototype.initialize = function (app) {
+SocketNamespace.prototype.initialize = function (app) {
 
   var that = this;
 
@@ -22,14 +21,23 @@ Socket.prototype.initialize = function (app) {
     console.log('connected');
 
     socket.on('init', function (message) {
+
       console.log('on init');
+
       var sessionObj = csession.util.decode({
         cookieName: 'roomsession',
         secret: 'N501tgoe$4newL!fe'
       }, message.crypt);
 
-      sockets[socket.id] = sessionObj;
-      that.emitState();
+
+      if (sessionObj && sessionObj.content) {
+        var roomId = sessionObj.content.roomId,
+          participantId = sessionObj.content.participantId;
+
+        if (roomId === that.roomId) {
+          that.roomObj.bindSocketToParticipant(socket, participantId);
+        }
+      }
     });
 
     socket.on('disconnect', function(){
@@ -38,23 +46,33 @@ Socket.prototype.initialize = function (app) {
   });
 }
 
-Socket.prototype.getSocket = function () {
+SocketNamespace.prototype.getSocket = function () {
   return this.socketNS;
 }
 
-Socket.prototype.emitState = function () {
+SocketNamespace.prototype.emitState = function () {
   this.socketNS.emit('roomstate', this.roomObj.getState());
 }
 
-module.exports = function (io, roomId) {
 
-  if (sockets[roomId]) {
-    return sockets[roomId];
-  }
+function SocketManager (io) {
+  this.io = io;
+  this.ns = {};
+}
 
-  if (!(this instanceof Socket)) {
-    return new Socket(io, roomId);
-  } else {
-    return this;
+SocketManager.prototype.manageRoomSocketNS = function (roomObj) {
+
+  var roomId = roomObj.getId();
+
+  if (roomId) {
+
+    if (!this.ns[roomId]) {
+      this.ns[roomId] = new SocketNamespace(this.io, roomObj);
+      roomObj.setSocketNS(this.ns[roomId]);
+    }
+
+    return this.ns[roomId];
   }
-};
+}
+
+module.exports = SocketManager;

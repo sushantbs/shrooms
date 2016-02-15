@@ -18,12 +18,18 @@ function Participant (options) {
 
   this.name = options.name;
   this.createdOn = moment(new Date());
+  this.isCreator = false;
+  this.socket = null;
   this._id = options._id || getSHA1(this.createdOn.unix().toString() + this.name);
 }
 
 Participant.prototype = {
 
   constructor: Participant,
+
+  markAsCreator: function () {
+    this.isCreator = true;
+  },
 
   getState: function () {
     return _.extend({name: this.name, _id: this._id}, this.context);
@@ -39,6 +45,16 @@ Participant.prototype = {
   setRules: function (ruleSet) {
 
     return this;
+  },
+
+  setSocket: function (socket) {
+    this.socket = socket;
+    this.pushPrivate();
+  },
+
+  pushPrivate: function () {
+    console.log('emiting prvate state for ' + this._id);
+    this.socket.emit('mystate', {me: this._id, amcreator: this.isCreator});
   }
 }
 

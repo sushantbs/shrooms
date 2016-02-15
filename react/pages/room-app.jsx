@@ -36,6 +36,7 @@ export default class Shroom extends Component {
 
     socket.on('error', (error) => {
       console.log('Socket connection error - ' + error);
+      
       if (error === 'Invalid namespace') {
         this.restoreRoom();
       } else {
@@ -69,6 +70,10 @@ export default class Shroom extends Component {
     socket.on('roomstate', (roomState) => {
       console.log('On roomstate');
       this.setState({...roomState})
+    });
+
+    socket.on('mystate', (myState) => {
+      debugger;
     });
   }
 
