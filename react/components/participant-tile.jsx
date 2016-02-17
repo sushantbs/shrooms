@@ -17,13 +17,22 @@ export default class ParticipantTile extends React.Component {
     super(props);
   }
 
-  onRemoveClick () {
+  onRemoveClick (participant) {
 
+    let {user, socket} = this.props;
+
+    if (user.isCreator) {
+      socket.emit('removeParticipant', participant);
+    } else {
+      if (user.me === participant._id) {
+        socket.emit('removeParticipant', participant);
+      }
+    }
   }
 
   render () {
 
-    var {participants} = this.props,
+    var {participants, user} = this.props,
       plength = participants.length,
       hasParticipants = Boolean(plength),
       cardTitle = (plength > 1) ? 'participants' : 'participant',
@@ -41,12 +50,24 @@ export default class ParticipantTile extends React.Component {
         <CardText expandable={true}>
           <List>
           {
-            _.map(participants, (participant, index) => (
-              <ListItem
-                key={'participant' + index}
-                rightIcon={<FontIcon onClick={this.onRemoveClick} className="material-icons">highlight_off</FontIcon>}
-                primaryText={participant.name} />
-            ))
+            (user.isCreator) ? (
+              _.map(participants, (participant, index) => (
+                <ListItem
+                  key={'participant' + index}
+                  rightIcon={<FontIcon onClick={this.onRemoveClick.bind(this, participant)} className="material-icons">highlight_off</FontIcon>}
+                  primaryText={participant.name} />
+              ))
+            ) : (
+              _.map(participants, (participant, index) => (
+                <ListItem
+                  key={'participant' + index}
+                  rightIcon={
+                    (user.me === participant._id) ?
+                      (<FontIcon onClick={this.onRemoveClick.bind(this, participant)} className="material-icons">highlight_off</FontIcon>)
+                      : null}
+                  primaryText={participant.name} />
+              ))
+            )
           }
           </List>
         </CardText>

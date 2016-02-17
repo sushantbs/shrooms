@@ -48,13 +48,38 @@ Participant.prototype = {
   },
 
   setSocket: function (socket) {
+
+    var that = this;
     this.socket = socket;
+
+    socket.on('removeParticipant', function () {
+      that.room
+        .leaveRoom(that)
+        .write()
+        .then(function () {
+          that.remove();
+        });
+    });
+
     this.pushPrivate();
+  },
+
+  setRoom: function (room) {
+    if (!this.room) {
+      this.room = room;
+    } else {
+      console.log('Error: There is already a room associated with this participant - ' + this.room.getId());
+    }
   },
 
   pushPrivate: function () {
     console.log('emiting prvate state for ' + this._id);
-    this.socket.emit('mystate', {me: this._id, amcreator: this.isCreator});
+    this.socket.emit('mystate', {me: this._id, isCreator: this.isCreator});
+  },
+
+  remove: function () {
+    var socket = this.socket;
+    socket.emit('leave');
   }
 }
 

@@ -112,12 +112,12 @@ class CreateRoom extends Component {
 						{ruleBasedFields}
 					</CardText>
 					<CardActions>
-						<form>
+						<div className='form-container'>
 							<TextField floatingLabelText='Name' value={this.state.participantName} onChange={this.updateState.bind(this, 'participantName')} onEnterKeyDown={this.submitForm.bind(this)} />
 							<div style={{marginTop: 50}}>
 								<RaisedButton label='JOIN ROOM' primary={true} onClick={this.submitForm.bind(this)} />
 							</div>
-						</form>
+						</div>
 					</CardActions>
 				</Card>
 			</div>);

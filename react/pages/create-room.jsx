@@ -92,7 +92,7 @@ class CreateRoom extends Component {
 
 		return (
 			<div className='content-block'>
-				<form>
+				<div className='form-container'>
 					<SelectField value={this.state.rule} onChange={this.updateRule.bind(this)}>
 						{_.map(this.props.rules, (ruleObj, index) => (<MenuItem key={index} value={ruleObj.value} primaryText={ruleObj.text} />))}
 					</SelectField>
@@ -102,7 +102,7 @@ class CreateRoom extends Component {
 					<div style={{marginTop: 50}}>
 						<RaisedButton label='CREATE ROOM' primary={true} onClick={this.submitForm.bind(this)} />
 					</div>
-				</form>
+				</div>
 			</div>);
 	}
 }

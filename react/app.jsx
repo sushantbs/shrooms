@@ -7,6 +7,7 @@ import Master from './master.jsx';
 import CreateRoom from './pages/create-room.jsx';
 import JoinRoom from './pages/join-room.jsx';
 import Shroom from './pages/room-app.jsx';
+import ThankYou from './pages/thank-you.jsx';
 
 domready(function () {
 
@@ -22,6 +23,7 @@ domready(function () {
     (<Router history={browserHistory}>
   		<Route path='/' component={Master} >
   			<Route path='create' component={CreateRoom} />
+        <Route path='thankyou' component={ThankYou} />
   			<Route path='join/:roomId' component={JoinRoom} />
         <Route path='room/:roomId' component={Shroom} />
   		</Route>

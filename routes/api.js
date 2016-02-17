@@ -65,43 +65,49 @@ module.exports = function (io) {
 	var readRoomService = function (roomId) {
 
 		var p = new Promise(function (resolve, reject) {
-			dbHandle
-				.getHandle()
-				.then(function (handleObj) {
-					var cursor = handleObj.handle.find({'_id': ObjectId(roomId.toString())});
-					console.log('read from db complete');
 
-					cursor.each(function (err, result) {
-						if (result) {
+			if (SHROOMCOLLECTION[roomId]) {
+				console.log('room found in cache');
+				setTimeout(function () {
+					resolve(SHROOMCOLLECTION[roomId]);
+				}, 10);
+			} else {
+				console.log('reading room from db');
+				dbHandle
+					.getHandle()
+					.then(function (handleObj) {
+						var cursor = handleObj.handle.find({'_id': ObjectId(roomId.toString())});
+						console.log('read from db complete');
 
-							console.log(JSON.stringify(result, null, 4));
+						cursor.each(function (err, result) {
+							if (result) {
 
-							var creator = new Participant({name: result.creator.name, _id: result.creator._id});
-							roomObj = new Room(creator, {name: result.info.name, rule: result.info.rule, context: result.info.context, _id: result._id.toString()});
+								var creator = new Participant({name: result.creator.name, _id: result.creator._id});
+								roomObj = new Room(creator, {name: result.info.name, rule: result.info.rule, context: result.info.context, _id: result._id.toString()});
 
-							_.forEach(result.participants, function (participant) {
-								if (participant._id !== result.creator._id) {
-									roomObj.joinRoom(participant);
-								}
-							});
+								_.forEach(result.participants, function (participant) {
+									if (participant._id !== result.creator._id) {
+										roomObj.joinRoom(participant);
+									}
+								});
 
-							socketManager.manageRoomSocketNS(roomObj);
-							
-							SHROOMCOLLECTION[roomId] = roomObj;
+								socketManager.manageRoomSocketNS(roomObj);
+								SHROOMCOLLECTION[roomId] = roomObj;
 
-							resolve(roomObj);
+								resolve(roomObj);
 
-						} else {
-							console.log('room not found in db');
-							reject('Room not found in DB');
-						}
+							} else {
+								console.log('ERROR: room not found in db');
+								reject('Room not found in DB');
+							}
 
+						});
+					})
+					.catch(function (err) {
+						console.log('ERROR: error reading from db: ' + JSON.stringify(err));
+						reject(err);
 					});
-				})
-				.catch(function (err) {
-					console.error(err);
-					reject(err);
-				});
+			}
 		});
 
 		return p;
@@ -136,8 +142,8 @@ module.exports = function (io) {
 						req.roomsession.isCreator = true;
 
 						console.log('client session obj post room creation: ' + JSON.stringify(req.roomsession, null, 4));
-						socketManager.manageRoomSocketNS(roomObj);
 
+						socketManager.manageRoomSocketNS(roomObj);
 						SHROOMCOLLECTION[id] = roomObj;
 
 						res.status(200).send({status: 'success', data: id});
@@ -157,22 +163,18 @@ module.exports = function (io) {
 
 	router.get('/info', function (req, res, next) {
 
-		var roomId = req.query.roomId,
-			roomObj = SHROOMCOLLECTION[roomId];
-
+		var roomId = req.query.roomId;
 		console.log('fetch room info for ' + roomId);
-		if (roomObj) {
-			res.status(200).send({status: 'success', data: roomObj.getInfo()});
-		} else {
-			console.log('room not found in memory!');
-			readRoomService(roomId, io)
-				.then(function (roomObj) {
-					res.status(500).send({status: 'success', data: roomObj.getInfo()});
-				})
-				.catch(function (err) {
-					res.status(500).send({status: 'error', error: (err || 'Error connecting to DB')});
-				});
-		}
+
+		readRoomService(roomId, io)
+			.then(function (roomObj) {
+				console.log('sending room info');
+				res.status(200).send({status: 'success', data: roomObj.getInfo()});
+			})
+			.catch(function (err) {
+				res.status(500).send({status: 'error', error: (err || 'Error connecting to DB')});
+			});
+
 	});
 
 	router.get('/state', function (req, res, next) {
@@ -181,93 +183,72 @@ module.exports = function (io) {
 			participantId = req.roomsession.participantId;
 
 		console.log('client session from cookie: ' + JSON.stringify(req.roomsession, null, 4));
-		roomObj = SHROOMCOLLECTION[roomId];
 
-		if (roomObj) {
-
-			console.log('room exists in memory: ' + roomObj.getState());
-			if (roomObj.hasParticipant(participantId)) {
-				return res.status(200).send({status: 'success', data: roomObj.getState()});
-			} else {
-				return res.status(500).send({status: 'error', error: 'You are not part of this room. Try joining this room'});
-			}
-		} else {
-
-			console.log('room not found in memory!');
-			readRoomService(roomId, io)
-				.then(function (roomObj) {
-					if (roomObj.hasParticipant(participantId)) {
-						return res.status(200).send({status: 'success', data: roomObj.getState()});
-					} else {
-						return res.status(500).send({status: 'error', error: 'You are not part of this room. Try joining this room'});
-					}
-				})
-				.catch(function (err) {
-					res.status(500).send({status: 'error', error: (err || 'Error connecting to DB')});
-				});
-		}
+		readRoomService(roomId, io)
+			.then(function (roomObj) {
+				if (roomObj.hasParticipant(participantId)) {
+					return res.status(200).send({status: 'success', data: roomObj.getState()});
+				} else {
+					console.log('ERROR: participant is not part of the room');
+					return res.status(500).send({status: 'error', error: 'You are not part of this room. Try joining this room'});
+				}
+			})
+			.catch(function (err) {
+				console.log('ERROR: fetching room');
+				res.status(500).send({status: 'error', error: (err || 'Error connecting to DB')});
+			});
 
 	});
 
 	router.post('/join', function (req, res, next) {
 
 		var postBody = req.body,
-			joinRoomId = postBody.roomId
+			joinRoomId = postBody.roomId,
 			existingRoomId = req.roomsession.roomId,
-			existingName = req.roomsession.participantName,
-			roomObj = SHROOMCOLLECTION[joinRoomId];
-
-		if (!roomObj) {
-			return res.status(500).send({status: 'error', error: 'Oops! Looks like the is not available right now. Please try again later.'});
-		}
+			existingName = req.roomsession.participantName;
 
 		if (existingRoomId) {
 			if ((existingRoomId === joinRoomId) && (existingName === postBody.name)) {
 				res.redirect('/room/' + joinRoomId);
 			} else {
+				console.log('ERROR: you are part of another room - ' + existingRoomId + ' as ' + existingName);
 				res.status(500).send({status: 'error', error: 'You are part of another room or are part of this room as another participant.'});
 			}
-		} else if (roomObj.isClosed) {
-			return res.status(500).send({status: 'error', error: 'The rooms is not accepting any more participants.'});
-		} else if (roomObj) {
+		} else {
 
-			var participant = new Participant({name: postBody.name});
+			readRoomService(joinRoomId, io)
+				.then(function (roomObj) {
+					if (roomObj.isClosed) {
+						console.log('ERROR: this room is closed');
+						return res.status(500).send({status: 'error', error: 'The rooms is not accepting any more participants.'});
+					} else if (roomObj) {
 
-			roomObj
-				.joinRoom(participant)
-				.write()
-				.then(function (result) {
+						var participant = new Participant({name: postBody.name});
+						console.log('adding participant to the room');
 
-					req.roomsession.roomId = joinRoomId;
-					req.roomsession.participantId = participant._id;
+						roomObj
+							.joinRoom(participant)
+							.write()
+							.then(function (result) {
 
-					console.log('joined room: ' + JSON.stringify(req.roomsession, null, 4))
-					res.status(200).send({status: 'success', data: result._id});
+								req.roomsession.roomId = joinRoomId;
+								req.roomsession.participantId = participant._id;
 
-					roomEntry.socketListener.emitState();
+								console.log('joined room: ' + JSON.stringify(req.roomsession, null, 4))
+								res.status(200).send({status: 'success', data: result._id});
+
+								roomEntry.socketListener.emitState();
+							})
+							.catch(function (err) {
+								res.status(500).send({status: 'error', error: 'Error in joining room. Please try again.'});
+							});
+					}
 				})
 				.catch(function (err) {
-					res.status(500).send({status: 'error', error: 'Error in joining room. Please try again.'});
+					console.log('ERROR: fetching room');
+					res.status(500).send({status: 'error', error: (err || 'Error connecting to DB')});
 				});
 		}
-	});
-
-	router.post('/leave', function (req, res, next) {
-
-		var participantName = req.roomsession.participantName,
-			roomId = req.roomsession.roomId;
-
-		roomObj = ROOMS[roomId];
-
-		roomObj
-			.leaveRoom({name: participantName})
-			.write()
-			.then(function (result) {
-				res.status(200).send({status: 'success', data: result});
-			})
-			.catch(function (err) {
-				res.status(500).send({status: 'error', error: 'Error in leaving the room. Please try again.'});
-			});
 	});
 
 	router.post('/remove', function (req, res, next) {

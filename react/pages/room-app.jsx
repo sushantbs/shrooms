@@ -8,11 +8,27 @@ import ParticipantTile from '../components/participant-tile.jsx';
 export default class Shroom extends Component {
 
   state = {
-    participants: []
+    participants: [],
+    user: {me: null, isCreator: false},
+    socket: null
   }
 
   constructor () {
     super();
+  }
+
+  eraseCookieFromAllPaths (name) {
+    // This function will attempt to remove a cookie from all paths.
+    var pathBits = location.pathname.split('/');
+    var pathCurrent = ' path=';
+
+    // do a simple pathless delete first.
+    document.cookie = name + '=; expires=Thu, 01-Jan-1970 00:00:01 GMT;';
+
+    for (var i = 0; i < pathBits.length; i++) {
+        pathCurrent += ((pathCurrent.substr(-1) != '/') ? '/' : '') + pathBits[i];
+        document.cookie = name + '=; expires=Thu, 01-Jan-1970 00:00:01 GMT;' + pathCurrent + ';';
+    }
   }
 
   makeSocketConnection () {
@@ -21,7 +37,7 @@ export default class Shroom extends Component {
     if (roomId) {
 
       console.log('connecting to ' + roomId);
-      this.socket = io.connect('/' + roomId);
+      this.state.socket = io.connect('/' + roomId);
       this.addSocketListeners();
     }
   }
@@ -32,11 +48,11 @@ export default class Shroom extends Component {
 
   addSocketListeners () {
 
-    var socket = this.socket;
+    var socket = this.state.socket;
 
     socket.on('error', (error) => {
       console.log('Socket connection error - ' + error);
-      
+
       if (error === 'Invalid namespace') {
         this.restoreRoom();
       } else {
@@ -73,7 +89,14 @@ export default class Shroom extends Component {
     });
 
     socket.on('mystate', (myState) => {
-      debugger;
+      this.setState({user: myState});
+    });
+
+    socket.on('leave', () => {
+      this.eraseCookieFromAllPaths('roomsession');
+      browserHistory.push({
+        pathname: '/thankyou'
+      })
     });
   }
 
@@ -95,13 +118,15 @@ export default class Shroom extends Component {
 
   componentWillUnmount () {
 
+    var socket = this.state.socket;
+
     socket.removeAllListeners('roomstate');
   }
 
   render () {
     return (
       <div className='content-block room-app'>
-        <ParticipantTile participants={this.state.participants} />
+        <ParticipantTile participants={this.state.participants} user={this.state.user} socket={this.state.socket} />
         <TextField style={{width: '100%'}} floatingLabelText='Share Link' value={'http://' + location.host + '/join/' + this.props.params.roomId} />
       </div>
     );

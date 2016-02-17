@@ -1,8 +1,9 @@
 var ObjectId = require('mongodb').ObjectID;
 var crypto = require('crypto-js');
 var Promise = require('es6-promise').Promise;
-var getHandle = require('./dbHandle').getHandle;
+var _ = require('lodash');
 
+var getHandle = require('./dbHandle').getHandle;
 var Participant = require('./participant');
 
 var Room = function (creator, options) {
@@ -53,18 +54,19 @@ Room.prototype = {
     getState: function () {
 
       var participants = [],
-        participant = creator = this.creator;
+        participant = first = this.first;
 
+      console.log('getting state');
       do {
         participants.push(participant.getState());
         participant = participant.next;
-      } while (participant && (participant !== creator));
+      } while (participant && (participant !== first));
 
       return {
           'info': this.getInfo(),
           'creator': this.creator.getState(),
           'participants': participants,
-          '_id': this._id
+          '_id': this.getId()
       }
     },
 
@@ -74,7 +76,10 @@ Room.prototype = {
       this.last = this.creator;
 
       this.last.prev = this.first;
-      this.first.next = this.prev;
+      this.last.next = this.first;
+
+      this.first.next = this.last;
+      this.first.prev = this.last;
 
       this.creator.markAsCreator();
     },
@@ -119,10 +124,6 @@ Room.prototype = {
     leaveRoom: function (participant) {
 
       if (!this.isFinished) {
-        if (this.size ===  1) {
-          console.error('The last person cannot leave the room without closing it');
-          return;
-        }
 
         if (this.cretor === participant) {
           console.error('The room creator cannot leave the room without closing it');
@@ -138,8 +139,19 @@ Room.prototype = {
         participant.next.prev = participant.prev;
       }
 
-      participant.remove();
-      this.size -= 1;
+      if (participant === this.last) {
+        this.last = participant.prev;
+      }
+
+      if (participant === this.first) {
+        this.first = participant.next;
+      }
+
+      _.remove(this.participants, function (p) {
+        return (p._id === participant._id);
+      });
+
+      return this;
     },
 
     closeRoom: function (roomId) {
@@ -165,10 +177,14 @@ Room.prototype = {
       var participant = this.getParticipant(participantId);
 
       if (participant) {
+        participant.setRoom(this);
         participant.setSocket(socket);
-      }
+        console.log('socket binding successfull');
 
-      this.pushRoomState();
+        this.pushRoomState();
+      } else {
+        console.log('ERROR: participant not found');
+      }
     },
 
     setRules: function (ruleSet) {
@@ -207,10 +223,11 @@ Room.prototype = {
             // TODO: simplify the handleObj. (or not)
             var state = that.getState();
 
+            console.log('state that will be written: ' + JSON.stringify(state, null, 4));
             if (that._created) {
               handleObj.handle.update({_id: state._id}, state, function (err, result) {
 
-                console.log('object updated in DB: ' + JSON.stringify(result, null, 4));
+                console.log('room updated in db');
                 result._id = state._id.toString();
 
                 handleObj.release();
@@ -227,7 +244,7 @@ Room.prototype = {
 
               handleObj.handle.insertOne(state, function (err, result) {
 
-                console.log('object added to DB: ' + JSON.stringify(result, null, 4));
+                console.log('room added to db');
                 result._id = state._id.toString();
                 that._created = true;
 

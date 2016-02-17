@@ -18,11 +18,9 @@ SocketNamespace.prototype.initialize = function (app) {
   this.socketNS = this.io.of('/' + this.roomId);
 
   this.socketNS.on('connection', function (socket) {
-    console.log('connected');
+    console.log('connected to ' + that.roomId);
 
     socket.on('init', function (message) {
-
-      console.log('on init');
 
       var sessionObj = csession.util.decode({
         cookieName: 'roomsession',
@@ -31,12 +29,17 @@ SocketNamespace.prototype.initialize = function (app) {
 
 
       if (sessionObj && sessionObj.content) {
+
         var roomId = sessionObj.content.roomId,
           participantId = sessionObj.content.participantId;
+
+        console.log('on init - participant: ' + participantId + '  in room: ' + roomId);
 
         if (roomId === that.roomId) {
           that.roomObj.bindSocketToParticipant(socket, participantId);
         }
+      } else {
+        console.log('ERROR: init failed as there is no session object')
       }
     });
 
@@ -51,6 +54,8 @@ SocketNamespace.prototype.getSocket = function () {
 }
 
 SocketNamespace.prototype.emitState = function () {
+
+  console.log('emitting the public state of room ' + this.roomId);
   this.socketNS.emit('roomstate', this.roomObj.getState());
 }
 
