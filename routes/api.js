@@ -80,8 +80,8 @@ module.exports = function (io) {
 						console.log('read from db complete');
 
 						cursor.each(function (err, result) {
+							console.log(JSON.stringify(arguments, null, 4));
 							if (result) {
-
 								var creator = new Participant({name: result.creator.name, _id: result.creator._id});
 								roomObj = new Room(creator, {name: result.info.name, rule: result.info.rule, context: result.info.context, _id: result._id.toString()});
 

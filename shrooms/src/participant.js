@@ -52,13 +52,26 @@ Participant.prototype = {
     var that = this;
     this.socket = socket;
 
-    socket.on('removeParticipant', function () {
-      that.room
-        .leaveRoom(that)
-        .write()
-        .then(function () {
-          that.remove();
-        });
+    socket.on('removeParticipant', function (participantObj) {
+
+      if (participantObj._id === that._id) {
+        that.room
+          .leaveRoom(that)
+          .write()
+          .then(function () {
+            that.remove();
+          });
+      } else {
+        if (that.isCreator) {
+          var p = that.room.getParticipant(participantObj._id);
+          that.room
+            .leaveRoom(p)
+            .write()
+            .then(function () {
+              p.remove();
+            });
+        }
+      }
     });
 
     this.pushPrivate();

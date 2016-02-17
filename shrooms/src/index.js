@@ -123,6 +123,11 @@ Room.prototype = {
 
     leaveRoom: function (participant) {
 
+      if (typeof participant === 'string') {
+        // id has been passed
+        participant = this.getParticipant(participant);
+      }
+
       if (!this.isFinished) {
 
         if (this.cretor === participant) {
