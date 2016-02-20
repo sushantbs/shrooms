@@ -12,7 +12,7 @@ var getSHA1 = function (str) {
 function Participant (options) {
 
   if (!options.name && typeof options.name !== 'string') {
-    console.error('Participant name has to be a non-empty string');
+    console.log('ERROR: Participant name has to be a non-empty string');
     return null;
   }
 
@@ -29,6 +29,10 @@ Participant.prototype = {
 
   markAsCreator: function () {
     this.isCreator = true;
+  },
+
+  getId: function () {
+    return this._id;
   },
 
   getState: function () {
@@ -78,7 +82,7 @@ Participant.prototype = {
   },
 
   setRoom: function (room) {
-    if (!this.room) {
+    if (!this.room || (this.room.getId() === room.getId())) {
       this.room = room;
     } else {
       console.log('Error: There is already a room associated with this participant - ' + this.room.getId());

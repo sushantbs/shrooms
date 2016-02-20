@@ -1,6 +1,7 @@
 var csession = require('client-sessions');
 var sockets = {};
 
+
 function SocketNamespace (io, roomObj) {
 
   this.io = io;

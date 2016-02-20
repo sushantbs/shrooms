@@ -1,4 +1,4 @@
 
-var Room = require('./src');
+var RoomManager = require('./src');
 
-module.exports = Room;
+module.exports = RoomManager;

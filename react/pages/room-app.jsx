@@ -105,6 +105,11 @@ export default class Shroom extends Component {
     service
       .get('/api/state')
       .end((err, response) => {
+
+        if (err) {
+          return;
+        }
+        
         var roomState = response.body.data;
         this.makeSocketConnection();
         this.setState({...roomState});

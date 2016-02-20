@@ -15,9 +15,6 @@ var users = require('./routes/users');
 var api = require('./routes/api');
 var csessions = require('client-sessions');
 
-var db = require('./shrooms/src/dbHandle');
-db.connect();
-
 var app = express();
 
 app.use(csessions({

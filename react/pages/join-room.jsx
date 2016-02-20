@@ -7,6 +7,7 @@ import CardActions from 'material-ui/lib/card/card-actions';
 import CardText from 'material-ui/lib/card/card-text';
 import TextField from 'material-ui/lib/text-field';
 import RaisedButton from 'material-ui/lib/raised-button';
+import _ from 'lodash';
 
 var rules = {
 	1: {
@@ -24,7 +25,7 @@ var rules = {
 	}
 }
 
-class CreateRoom extends Component {
+class JoinRoom extends Component {
 
 	state = {
 		name: '',
@@ -45,7 +46,9 @@ class CreateRoom extends Component {
 			.end(function (err, response) {
 
 				if (err) {
-					t.setState({error: 'Error'});
+					var errorBody = _.get(err, 'response.body');
+					debugger;
+					t.setState({error: errorBody.error, errorData: errorBody.data});
 					return;
 				}
 
@@ -89,6 +92,31 @@ class CreateRoom extends Component {
 		this.setState(state);
 	}
 
+	eraseCookieFromAllPaths (name) {
+		// This function will attempt to remove a cookie from all paths.
+		var pathBits = location.pathname.split('/');
+		var pathCurrent = ' path=';
+
+		// do a simple pathless delete first.
+		document.cookie = name + '=; expires=Thu, 01-Jan-1970 00:00:01 GMT;';
+
+		for (var i = 0; i < pathBits.length; i++) {
+				pathCurrent += ((pathCurrent.substr(-1) != '/') ? '/' : '') + pathBits[i];
+				document.cookie = name + '=; expires=Thu, 01-Jan-1970 00:00:01 GMT;' + pathCurrent + ';';
+		}
+	}
+
+	forceJoinRoom () {
+		this.eraseCookieFromAllPaths('roomsession');
+		this.submitForm();
+	}
+
+	goBack () {
+		browserHistory.push({
+			pathname: '/room/' + (this.state.errorData && this.state.errorData.roomId)
+		})
+	}
+
 	render () {
 
 		var ruleBasedFields = null;
@@ -101,6 +129,15 @@ class CreateRoom extends Component {
 				ruleBasedFields.push(<div key={index} className='info-row'><div className='info-label'>{translator[index]}</div><div className='info-value'>{ctxItem}</div></div>)
 			});
 		}
+
+		var errorBlock = this.state.errorData ? (
+			<div className='error-block'>
+				<div>{this.state.error}</div>
+				<p>Click <b>FORCE JOIN</b> to leave the room you other room part of and join {this.state.name}.
+				If you wish to go back to the other room click GO BACK.</p>
+				<RaisedButton label='FORCE JOIN' primary={true} onClick={this.forceJoinRoom.bind(this)} />
+				<RaisedButton label='GO BACK' onClick={this.goBack} />
+			</div>) : null;
 
 		return (
 			<div className='content-block'>
@@ -117,6 +154,7 @@ class CreateRoom extends Component {
 							<div style={{marginTop: 50}}>
 								<RaisedButton label='JOIN ROOM' primary={true} onClick={this.submitForm.bind(this)} />
 							</div>
+							{errorBlock}
 						</div>
 					</CardActions>
 				</Card>
@@ -124,4 +162,4 @@ class CreateRoom extends Component {
 	}
 }
 
-export default CreateRoom;
+export default JoinRoom;

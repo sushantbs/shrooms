@@ -1,315 +1,108 @@
-var ObjectId = require('mongodb').ObjectID;
-var crypto = require('crypto-js');
 var Promise = require('es6-promise').Promise;
+var ObjectId = require('mongodb').ObjectID;
 var _ = require('lodash');
 
-var getHandle = require('./dbHandle').getHandle;
+var SocketManager = require('./socket');
 var Participant = require('./participant');
+var Room = require('./room');
 
-var Room = function (creator, options) {
+var dbHandle = require('./dbHandle');
 
-  if (options._id) {
-    this._id = ObjectId(options._id);
-    this._created = true;
-  }
-  else {
-    this._id = ObjectId();
-    this._created = false;
-  }
+function RoomManager (io) {
 
-  if (!creator) {
-    console.error('Cannot create a room without a creator');
-    return null;
-  }
-
-  if (creator instanceof Participant) {
-    this.creator = creator;
-  } else {
-    this.creator = new Participant({name: creator});
-  }
-
-  this.name = options.name;
-  this.rule = options.rule;
-  this.context = options.context;
-
-  this.initialize();
+  this.rooms = {};
+  this.socketMgr = new SocketManager(io)
+  dbHandle.connect();
 }
 
-Room.prototype = {
+RoomManager.prototype = {
 
-    constructor: Room,
+  constructor: RoomManager,
 
-    getId: function () {
-      return this._id.toString();
-    },
+  fetchRoom: function (roomId) {
 
-    getInfo: function () {
-      return {
-        name: this.name,
-        rule: this.rule,
-        context: this.context
-      }
-    },
+    var rooms = this.rooms,
+      socketMgr = this.socketMgr;
 
-    getState: function () {
+    var p = new Promise(function (resolve, reject) {
 
-      var participants = [],
-        participant = first = this.first;
+      if (rooms[roomId]) {
 
-      console.log('getting state');
-      do {
-        participants.push(participant.getState());
-        participant = participant.next;
-      } while (participant && (participant !== first));
+        console.log('RoomManager#fetchRoom: room found in cache');
 
-      return {
-          'info': this.getInfo(),
-          'creator': this.creator.getState(),
-          'participants': participants,
-          '_id': this.getId()
-      }
-    },
-
-    initialize: function () {
-
-      this.first = this.creator;
-      this.last = this.creator;
-
-      this.last.prev = this.first;
-      this.last.next = this.first;
-
-      this.first.next = this.last;
-      this.first.prev = this.last;
-
-      this.creator.markAsCreator();
-    },
-
-    joinRoom: function (participant) {
-
-      var np;
-
-      if (!(participant instanceof Participant)) {
-        np = new Participant(participant);
+        setTimeout(function () {
+          resolve(rooms[roomId]);
+        }, 10);
       } else {
-        np = participant;
-      }
 
-      np.prev = this.last;
-      np.next = this.first;
+        console.log('RoomManager#fetchRoom: reading room from db');
 
-      this.first.prev = np;
-      this.last.next = np;
-
-      this.last = np;
-
-      return this;
-    },
-
-    pushRoomState: function () {
-      this.socketNS.emitState();
-    },
-
-    pushPrivateStates: function () {
-      var participant = first = this.first;
-
-      do {
-        if (participant._id === participantId) {
-          participant.pushPrivate();
-        };
-
-        participant = participant.next;
-      } while (participant && (participant !== first));
-    },
-
-    leaveRoom: function (participant) {
-
-      if (typeof participant === 'string') {
-        // id has been passed
-        participant = this.getParticipant(participant);
-      }
-
-      if (!this.isFinished) {
-
-        if (this.cretor === participant) {
-          console.error('The room creator cannot leave the room without closing it');
-          return;
-        }
-      }
-
-      if (participant.prev) {
-        participant.prev.next = participant.next;
-      }
-
-      if (participant.next) {
-        participant.next.prev = participant.prev;
-      }
-
-      if (participant === this.last) {
-        this.last = participant.prev;
-      }
-
-      if (participant === this.first) {
-        this.first = participant.next;
-      }
-
-      _.remove(this.participants, function (p) {
-        return (p._id === participant._id);
-      });
-
-      return this;
-    },
-
-    closeRoom: function (roomId) {
-      this.isFinished = true;
-      var pr = this.first;
-
-      while(pr) {
-        this.leaveRoom(pr);
-        pr = pr.next;
-      }
-
-      this.dispose();
-    },
-
-    setSocketNS: function (socketNS) {
-      this.socketNS = socketNS;
-      socketNS.initialize();
-    },
-
-    bindSocketToParticipant: function (socket, participantId) {
-
-      console.log('binding socket to ' + participantId);
-      var participant = this.getParticipant(participantId);
-
-      if (participant) {
-        participant.setRoom(this);
-        participant.setSocket(socket);
-        console.log('socket binding successfull');
-
-        this.pushRoomState();
-      } else {
-        console.log('ERROR: participant not found');
-      }
-    },
-
-    setRules: function (ruleSet) {
-
-      var participant = creator = this.creator;
-
-      do {
-        participant.setRules(ruleSet);
-        participant = participant.next;
-      } while (participant && (participant !== creator));
-
-      return this;
-    },
-
-    setContext: function (context) {
-
-      var participant = creator = this.creator;
-
-      do {
-        participant.setContext(context);
-        participant = participant.next;
-      } while (participant && (participant !== creator));
-
-      this.context = context;
-
-      return this;
-    },
-
-    write: function () {
-      var that = this;
-      var promise = new Promise(function (resolve, reject) {
-        getHandle()
+        dbHandle
+          .getHandle()
           .then(function (handleObj) {
-            // handleObj is an object that is too complicated to document
-            // at the time of writing. (it could be the beer)
-            // TODO: simplify the handleObj. (or not)
-            var state = that.getState();
+            console.log(roomId);
+            var findQuery = {'_id': ObjectId(roomId)}
+            console.log(findQuery);
+            var cursor = handleObj.handle.find(findQuery);
 
-            console.log('state that will be written: ' + JSON.stringify(state, null, 4));
-            if (that._created) {
-              handleObj.handle.update({_id: state._id}, state, function (err, result) {
+            console.log('RoomManager#fetchRoom: read from db complete');
 
-                console.log('room updated in db');
-                result._id = state._id.toString();
+            cursor.each(function (err, result) {
+              if (result) {
+                var creator = new Participant({name: result.creator.name, _id: result.creator._id});
+                roomObj = new Room(creator, {name: result.info.name, rule: result.info.rule, context: result.info.context, _id: result._id.toString()});
 
-                handleObj.release();
+                _.forEach(result.participants, function (participant) {
+                  if (participant._id !== result.creator._id) {
+                    roomObj.joinRoom(participant);
+                  }
+                });
 
-                if (err) {
-                  console.log(error);
-                  return reject(err);
-                }
+                socketMgr.manageRoomSocketNS(roomObj);
+                rooms[roomId] = roomObj;
 
-                return resolve(result);
-              });
+                resolve(roomObj);
 
-            } else {
-
-              handleObj.handle.insertOne(state, function (err, result) {
-
-                console.log('room added to db');
-                result._id = state._id.toString();
-                that._created = true;
-
-                handleObj.release();
-
-                if (err) {
-                  console.log(error);
-                  return reject(err);
-                }
-
-                return resolve(result);
-              });
-            }
+              } else {
+                console.log('ERROR: RoomManager#fetchRoom: room not found in db');
+                reject('Room not found in DB');
+              }
+            });
           })
           .catch(function (err) {
-            return reject(err);
-          })
+            console.log('ERROR: RoomManager#fetchRoom: error reading from db: ' + JSON.stringify(err));
+            reject(err);
+          });
+      }
+    });
 
-      });
+    return p;
+  },
 
-      return promise;
-    },
+  createRoom: function (postBody) {
 
-    read: function () {
+    var rule = postBody.rule,
+      context = postBody.context,
+      name = postBody.name,
+      creator = postBody.creator,
+      roomCreator = new Participant({name: creator}),
+      roomObj = new Room(roomCreator, {name: name, rule: rule, context: context});
 
-    },
+    var p = new Promise(function (resolve, reject) {
+      roomObj
+        .setRules(rule)
+        .setContext(context)
+        .write()
+        .then(function (result) {
+          resolve(roomObj);
+        })
+        .catch(function (err) {
+          reject(err);
+        })
+    });
 
-    getParticipant: function (participantId) {
-
-      var participant = first = this.first;
-
-      do {
-        if (participant._id === participantId) {
-          return participant;
-        };
-
-        participant = participant.next;
-      } while (participant && (participant !== first));
-
-      return false;
-    },
-
-    hasParticipant: function (participantId) {
-
-      var participant = first = this.first;
-
-      do {
-        if (participant._id === participantId) {
-          return true;
-        };
-
-        participant = participant.next;
-      } while (participant && (participant !== first));
-
-      return false;
-    },
-
-    dispose: function () {
-
-    }
+    return p;
+  }
 }
 
-module.exports = Room;
+module.exports = RoomManager;
