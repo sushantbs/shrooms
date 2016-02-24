@@ -1,28 +1,114 @@
-body {
-  padding: 20px;
-  font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
-  width: 500px;
-  margin: 0 auto;
+html {
 
-  div.form-container {
-    text-align: center;
+  height: 100%;
+
+  * {
+    box-sizing: border-box;
   }
 
-  .content-block {
-    padding: 10px;
+  body {
+    font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
+    max-width: 600px;
+    margin: 0 auto;
+    height: 100%;
 
-    .info-row {
-      padding: 10px 0;
+    div.form-container {
+      text-align: center;
 
-      .info-label {
-        width: 100px;
+      > div {
+        display: block !important;
+        text-align: center;
+        margin: 0 auto;
+      }
+    }
+
+    .content-block {
+      padding: 80px 0 10px 0;
+      width: 100%;
+      position: relative;
+
+      .info-row {
+        padding: 10px 0;
+
+        .info-label {
+          width: 100px;
+        }
+
+        .info-label, .info-value {
+          display: inline-block;
+        }
+      }
+    }
+
+    .participant-block {
+      position: absolute;
+      width: 100%;
+      top: 10px;
+    }
+
+    .roomshare-block {
+      padding: 5px;
+    }
+
+    .activity-area {
+      margin: 5px auto;
+      padding: 0 0 50px 0;
+      position: relative;
+
+      .activity-log {
+
+        height: 100%;
+        overflow: auto;
+
+        .room-activity {
+          padding: 5px;
+          margin: 5px auto;
+          background-color: #dedede;
+          text-align: center;
+        }
+
+        .my-activity, .user-activity {
+          margin: 3px 0;
+        }
+
+        .my-activity {
+          text-align: right;
+        }
+
+        .activity-details {
+          display: inline-block;
+          padding: 5px;
+          margin: 0 5px;
+          border: 1px solid #dedede;
+          border-radius: 4px;
+
+          .activity-actor {
+            font-size: 12px;
+          }
+
+          .activity-text {
+            font-size: 16px;
+          }
+        }
       }
 
-      .info-label, .info-value {
-        display: inline-block;
+      .create-activity {
+        padding-right: 100px;
+        position: absolute;
+        bottom: 0;
+        width: 100%;
+
+        .activity-input {
+          width: auto !important;
+          display: block !important;
+        }
+
+        .activity-button {
+          position: absolute;
+          right: 0;
+          top: 3px;
+        }
       }
     }
   }
-
-
 }

@@ -40,10 +40,8 @@ RoomManager.prototype = {
         dbHandle
           .getHandle()
           .then(function (handleObj) {
-            console.log(roomId);
             var findQuery = {'_id': ObjectId(roomId)}
-            console.log(findQuery);
-            var cursor = handleObj.handle.find(findQuery);
+            var cursor = handleObj.handle.find(findQuery, {'activityLog': {$slice: -100}});
 
             console.log('RoomManager#fetchRoom: read from db complete');
 
@@ -60,6 +58,8 @@ RoomManager.prototype = {
 
                 socketMgr.manageRoomSocketNS(roomObj);
                 rooms[roomId] = roomObj;
+
+                roomObj.activityLog = result.activityLog;
 
                 resolve(roomObj);
 

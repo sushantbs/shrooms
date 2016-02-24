@@ -78,6 +78,10 @@ Participant.prototype = {
       }
     });
 
+    socket.on('activity', function (activityObj) {
+      that.room.addActivity(activityObj);
+    });
+
     this.pushPrivate();
   },
 
@@ -91,7 +95,7 @@ Participant.prototype = {
 
   pushPrivate: function () {
     console.log('emiting prvate state for ' + this._id);
-    this.socket.emit('mystate', {me: this._id, isCreator: this.isCreator});
+    this.socket.emit('mystate', {id: this.getId(), name: this.name, isCreator: this.isCreator});
   },
 
   remove: function () {

@@ -39,7 +39,7 @@ export default class ParticipantTile extends React.Component {
       end;
 
     return (
-      <Card>
+      <Card className='participant-block'>
         <CardHeader
           title={plength}
           subtitle={cardTitle}
@@ -62,7 +62,7 @@ export default class ParticipantTile extends React.Component {
                 <ListItem
                   key={'participant' + index}
                   rightIcon={
-                    (user.me === participant._id) ?
+                    (user.me === participant.id) ?
                       (<FontIcon onClick={this.onRemoveClick.bind(this, participant)} className="material-icons">highlight_off</FontIcon>)
                       : null}
                   primaryText={participant.name} />

@@ -24,7 +24,7 @@ export default class MasterContainer extends Component {
 		return (
 			<AppCanvas className='content'>
 				<div className='header'>
-				<AppBar title="Shroom Rule" />
+					<AppBar title="Shroom Rule" showMenuIconButton={false} />
 				</div>
 				{this.props.children}
 			</AppCanvas>);

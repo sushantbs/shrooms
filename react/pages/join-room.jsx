@@ -134,7 +134,7 @@ class JoinRoom extends Component {
 			<div className='error-block'>
 				<div>{this.state.error}</div>
 				<p>Click <b>FORCE JOIN</b> to leave the room you other room part of and join {this.state.name}.
-				If you wish to go back to the other room click GO BACK.</p>
+				If you wish to go back to the other room click <b>GO BACK</b>.</p>
 				<RaisedButton label='FORCE JOIN' primary={true} onClick={this.forceJoinRoom.bind(this)} />
 				<RaisedButton label='GO BACK' onClick={this.goBack} />
 			</div>) : null;

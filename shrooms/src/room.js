@@ -31,6 +31,13 @@ var Room = function (creator, options) {
   this.name = options.name;
   this.rule = options.rule;
   this.context = options.context;
+  this.socketNS = null;
+
+  this.activityLog = [];
+  this.unsavedActivity = [];
+  var creationActivity = {actor: 'room', text: (creator.name + ' created the room ' + options.name)};
+
+  this.addActivity(creationActivity);
 
   this.initialize();
 }
@@ -62,10 +69,14 @@ Room.prototype = {
         participant = participant.next;
       } while (participant && (participant !== first));
 
+      // Get 20 most recent activities
+      var recentActivity = this.activityLog;
+
       return {
           'info': this.getInfo(),
           'creator': this.creator.getState(),
           'participants': participants,
+          'recentActivity': recentActivity,
           '_id': this.getId()
       }
     },
@@ -102,11 +113,15 @@ Room.prototype = {
 
       this.last = np;
 
+      this.addActivity({actor: 'room', text: (participant.name + ' joined the room')});
+
       return this;
     },
 
     pushRoomState: function () {
-      this.socketNS.emitState();
+      if (this.socketNS) {
+        this.socketNS.emitState();
+      }
     },
 
     pushPrivateStates: function () {
@@ -218,6 +233,24 @@ Room.prototype = {
       return this;
     },
 
+    addActivity: function (activityObj) {
+
+      this.activityLog.push(activityObj);
+      this.unsavedActivity.push(activityObj);
+
+      if (this.activityLog.length > 100) {
+        this.activityLog.shift();
+      }
+
+      if (this.unsavedActivity.length > 5) {
+        this.write();
+      }
+
+      this.pushRoomState();
+
+      return this;
+    },
+
     write: function () {
       var that = this;
       var promise = new Promise(function (resolve, reject) {
@@ -229,19 +262,30 @@ Room.prototype = {
             var state = that.getState();
 
             delete state._id;
-            console.log('state that will be written: ' + JSON.stringify(state, null, 4));
+            delete state.recentActivity;
 
             if (that._created) {
-              handleObj.handle.update({_id: that._id}, state, function (err, result) {
+              var tempArr = that.unsavedActivity;
+              that.unsavedActivity = [];
+
+              handleObj.handle.update({_id: that._id}, {
+                $set: state,
+                $push: {
+                  activityLog: {
+                    $each: tempArr
+                  }
+                }
+              } , function (err, result) {
 
                 console.log('room updated in db');
-
                 result._id = that._id.toString();
 
                 handleObj.release();
 
                 if (err) {
                   console.log(error);
+                  that.unsavedActivity = tempArr.concat(that.unsavedActivity);
+
                   return reject(err);
                 }
 
@@ -251,7 +295,9 @@ Room.prototype = {
             } else {
 
               state._id = that._id;
-              console.log(state);
+              state.activityLog = that.unsavedActivity;
+              that.unsavedActivity = [];
+
               handleObj.handle.insertOne(state, function (err, result) {
 
                 console.log('room added to db');
@@ -261,6 +307,7 @@ Room.prototype = {
 
                 if (err) {
                   console.log(error);
+                  that.unsavedActivity = state.activityLog.concat(that.unsavedActivity);
                   return reject(err);
                 }
 

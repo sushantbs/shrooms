@@ -68,9 +68,7 @@ module.exports = {
             _.forEach(connectionPool, function (handleObj) {
               //if (!handleObj.busy) {
               if (true) {
-                console.log(handleObj);
                 handleObj.use();
-                console.log('here');
                 resolve(handleObj);
               }
             });

@@ -4,6 +4,7 @@ import service from 'superagent';
 import _ from 'lodash';
 import TextField from 'material-ui/lib/text-field';
 import ParticipantTile from '../components/participant-tile.jsx';
+import ActivityLog from '../components/activity-log.jsx';
 
 export default class Shroom extends Component {
 
@@ -88,6 +89,11 @@ export default class Shroom extends Component {
       this.setState({...roomState})
     });
 
+    socket.on('activity', (activity) => {
+      console.log(activity);
+      this.setState({activity});
+    });
+
     socket.on('mystate', (myState) => {
       this.setState({user: myState});
     });
@@ -109,7 +115,7 @@ export default class Shroom extends Component {
         if (err) {
           return;
         }
-        
+
         var roomState = response.body.data;
         this.makeSocketConnection();
         this.setState({...roomState});
@@ -119,6 +125,13 @@ export default class Shroom extends Component {
   componentDidMount () {
 
     this.makeSocketConnection();
+  }
+
+  sendUserMessage (message) {
+
+    var {socket, user} = this.state;
+
+    socket.emit('activity', {actor: user, text: message});
   }
 
   componentWillUnmount () {
@@ -132,7 +145,8 @@ export default class Shroom extends Component {
     return (
       <div className='content-block room-app'>
         <ParticipantTile participants={this.state.participants} user={this.state.user} socket={this.state.socket} />
-        <TextField style={{width: '100%'}} floatingLabelText='Share Link' value={'http://' + location.host + '/join/' + this.props.params.roomId} />
+        <ActivityLog user={this.state.user} activity={this.state.recentActivity} onMessage={this.sendUserMessage.bind(this)} />
+        <TextField className='roomshare-block' style={{width: '100%'}} floatingLabelText='Share Link' value={'http://' + location.host + '/join/' + this.props.params.roomId} />
       </div>
     );
   }
