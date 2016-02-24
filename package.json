@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "start": "node ./bin/www",
+    "start": "node server.js",
     "dev": " NODE_ENV=development webpack-dev-server --devtool eval --output-public-path http://localhost:8080/ --hot --progress --colors --inline --content-base . & gulp nodemon",
     "debug": " NODE_ENV=development webpack-dev-server --devtool eval --output-public-path http://localhost:8080/ --hot --progress --colors --inline --content-base . & NODE_ENV=development node-debug --port 8081 server.js"
   },
