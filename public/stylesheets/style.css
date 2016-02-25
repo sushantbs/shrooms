@@ -1,9 +1,93 @@
-body {
-  padding: 20px;
+html {
+  height: 100%;
+}
+html * {
+  box-sizing: border-box;
+}
+html body {
   font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
-  width: 500px;
+  max-width: 600px;
+  margin: 0 auto;
+  height: 100%;
+}
+html body div.form-container {
+  text-align: center;
+}
+html body div.form-container > div {
+  display: block !important;
+  text-align: center;
   margin: 0 auto;
 }
-body form {
+html body .content-block {
+  padding: 80px 0 10px 0;
+  width: 100%;
+  position: relative;
+}
+html body .content-block .info-row {
+  padding: 10px 0;
+}
+html body .content-block .info-row .info-label {
+  width: 100px;
+}
+html body .content-block .info-row .info-label,
+html body .content-block .info-row .info-value {
+  display: inline-block;
+}
+html body .participant-block {
+  position: absolute;
+  width: 100%;
+  top: 10px;
+}
+html body .roomshare-block {
+  padding: 5px;
+}
+html body .activity-area {
+  margin: 5px auto;
+  padding: 0 0 50px 0;
+  position: relative;
+}
+html body .activity-area .activity-log {
+  height: 100%;
+  overflow: auto;
+}
+html body .activity-area .activity-log .room-activity {
+  padding: 5px;
+  margin: 5px auto;
+  background-color: #dedede;
   text-align: center;
+}
+html body .activity-area .activity-log .my-activity,
+html body .activity-area .activity-log .user-activity {
+  margin: 3px 0;
+}
+html body .activity-area .activity-log .my-activity {
+  text-align: right;
+}
+html body .activity-area .activity-log .activity-details {
+  display: inline-block;
+  padding: 5px;
+  margin: 0 5px;
+  border: 1px solid #dedede;
+  border-radius: 4px;
+}
+html body .activity-area .activity-log .activity-details .activity-actor {
+  font-size: 12px;
+}
+html body .activity-area .activity-log .activity-details .activity-text {
+  font-size: 16px;
+}
+html body .activity-area .create-activity {
+  padding-right: 100px;
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+}
+html body .activity-area .create-activity .activity-input {
+  width: auto !important;
+  display: block !important;
+}
+html body .activity-area .create-activity .activity-button {
+  position: absolute;
+  right: 0;
+  top: 3px;
 }
