@@ -3,12 +3,13 @@ html {
 }
 html * {
   box-sizing: border-box;
+  font-size: inherit;
 }
 html body {
   font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
-  max-width: 600px;
   margin: 0 auto;
   height: 100%;
+  font-size: 24px;
 }
 html body div.form-container {
   text-align: center;
@@ -71,10 +72,10 @@ html body .activity-area .activity-log .activity-details {
   border-radius: 4px;
 }
 html body .activity-area .activity-log .activity-details .activity-actor {
-  font-size: 12px;
+  font-size: 0.6em;
 }
 html body .activity-area .activity-log .activity-details .activity-text {
-  font-size: 16px;
+  font-size: 0.8em;
 }
 html body .activity-area .create-activity {
   padding-right: 100px;

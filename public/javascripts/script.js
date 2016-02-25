@@ -24785,13 +24785,19 @@
 		}, {
 			key: 'render',
 			value: function render() {
+
+				var style = {
+					fontSize: '2.5em',
+					lineHeight: '2em'
+				};
+
 				return _react2['default'].createElement(
 					_materialUiLibAppCanvas2['default'],
 					{ className: 'content' },
 					_react2['default'].createElement(
 						'div',
 						{ className: 'header' },
-						_react2['default'].createElement(_materialUiLibAppBar2['default'], { title: 'Shroom Rule', showMenuIconButton: false })
+						_react2['default'].createElement(_materialUiLibAppBar2['default'], { titleStyle: style, title: 'Shroom Rule', showMenuIconButton: false })
 					),
 					this.props.children
 				);
@@ -34031,8 +34037,20 @@
 
 				var ruleBasedFields = null;
 
+				var styleObj = {
+					fontSize: '1.2em',
+					maxWidth: '500px',
+					minWidth: '400px',
+					lineHeight: '1.8em',
+					margin: '50px auto'
+				},
+				    inlineLabelStyle = {
+					top: '25px',
+					lineHeight: '1.2em'
+				};
+
 				if (this.state.rule === 1 && this.state.context) {
-					ruleBasedFields = [_react2['default'].createElement(_materialUiLibTextField2['default'], { key: 'buyin', floatingLabelText: 'Buy In', value: this.state.context.buyIn, onChange: this.updateContext.bind(this, 'buyId'), onEnterKeyDown: this.submitForm.bind(this) }), _react2['default'].createElement(_materialUiLibTextField2['default'], { key: 'blinds', floatingLabelText: 'Small blinds', value: this.state.context.small, onChange: this.updateContext.bind(this, 'small'), onEnterKeyDown: this.submitForm.bind(this) })];
+					ruleBasedFields = [_react2['default'].createElement(_materialUiLibTextField2['default'], { style: styleObj, floatingLabelStyle: inlineLabelStyle, key: 'buyin', floatingLabelText: 'Buy In', value: this.state.context.buyIn, onChange: this.updateContext.bind(this, 'buyId'), onEnterKeyDown: this.submitForm.bind(this) }), _react2['default'].createElement(_materialUiLibTextField2['default'], { style: styleObj, floatingLabelStyle: inlineLabelStyle, key: 'blinds', floatingLabelText: 'Small blinds', value: this.state.context.small, onChange: this.updateContext.bind(this, 'small'), onEnterKeyDown: this.submitForm.bind(this) })];
 				}
 
 				return _react2['default'].createElement(
@@ -34043,18 +34061,18 @@
 						{ className: 'form-container' },
 						_react2['default'].createElement(
 							_materialUiLibSelectField2['default'],
-							{ value: this.state.rule, onChange: this.updateRule.bind(this) },
+							{ style: styleObj, value: this.state.rule, onChange: this.updateRule.bind(this) },
 							_.map(this.props.rules, function (ruleObj, index) {
-								return _react2['default'].createElement(_materialUiLibMenusMenuItem2['default'], { key: index, value: ruleObj.value, primaryText: ruleObj.text });
+								return _react2['default'].createElement(_materialUiLibMenusMenuItem2['default'], { style: styleObj, key: index, value: ruleObj.value, primaryText: ruleObj.text });
 							})
 						),
-						_react2['default'].createElement(_materialUiLibTextField2['default'], { floatingLabelText: 'Room Name', hintText: 'e.g Poker 101', value: this.state.name, onChange: this.updateState.bind(this, 'name'), onEnterKeyDown: this.submitForm.bind(this) }),
-						_react2['default'].createElement(_materialUiLibTextField2['default'], { floatingLabelText: 'Creator Name', value: this.state.creator, onChange: this.updateState.bind(this, 'creator'), onEnterKeyDown: this.submitForm.bind(this) }),
+						_react2['default'].createElement(_materialUiLibTextField2['default'], { style: styleObj, floatingLabelStyle: inlineLabelStyle, floatingLabelText: 'Room Name', value: this.state.name, onChange: this.updateState.bind(this, 'name'), onEnterKeyDown: this.submitForm.bind(this) }),
+						_react2['default'].createElement(_materialUiLibTextField2['default'], { style: styleObj, floatingLabelStyle: inlineLabelStyle, floatingLabelText: 'Creator Name', value: this.state.creator, onChange: this.updateState.bind(this, 'creator'), onEnterKeyDown: this.submitForm.bind(this) }),
 						ruleBasedFields,
 						_react2['default'].createElement(
 							'div',
 							{ style: { marginTop: 50 } },
-							_react2['default'].createElement(_materialUiLibRaisedButton2['default'], { label: 'CREATE ROOM', primary: true, onClick: this.submitForm.bind(this) })
+							_react2['default'].createElement(_materialUiLibRaisedButton2['default'], { style: { height: '60px', width: '200px', margin: '0 auto' }, labelStyle: { fontSize: '0.8em', padding: '20px' }, label: 'CREATE ROOM', primary: true, onClick: this.submitForm.bind(this) })
 						)
 					)
 				);
