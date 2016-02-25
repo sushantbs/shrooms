@@ -21,10 +21,16 @@ export default class MasterContainer extends Component {
 	}
 
 	render () {
+
+		var style = {
+			fontSize: '2.5em',
+			lineHeight: '2em'
+		};
+
 		return (
 			<AppCanvas className='content'>
 				<div className='header'>
-					<AppBar title="Shroom Rule" showMenuIconButton={false} />
+					<AppBar titleStyle={style} title="Shroom Rule" showMenuIconButton={false} />
 				</div>
 				{this.props.children}
 			</AppCanvas>);
