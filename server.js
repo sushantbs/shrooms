@@ -2,7 +2,8 @@
 // START THE SERVER
 var http = require('http');
 //var app = require('./app');
-var port = process.env.NODE_PORT || 6969;
+var port = process.env.NODE_PORT || process.env.OPENSHIFT_NODEJS_PORT || 6969;
+var server_ip = process.env.OPENSHIFT_NODEJS_IP || '127.0.0.1'
 
 var express = require('express');
 var path = require('path');
@@ -81,7 +82,7 @@ app.use(function(err, req, res, next) {
 });
 
 
-server.listen(port, function (err) {
+server.listen(port, server_ip, function (err) {
   if (err) {
     console.log("[ERROR]", err);
   }
