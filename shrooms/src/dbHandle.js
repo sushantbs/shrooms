@@ -36,10 +36,14 @@ module.exports = {
       // default to a 'localhost' configuration:
       var connection_string = 'localhost:27017/rooms';
       // if OPENSHIFT env variables are present, use the available connection info:
-      if(process.env.OPENSHIFT_MONGODB_DB_URL){
-        connection_string = process.env.OPENSHIFT_MONGODB_DB_URL + process.env.OPENSHIFT_APP_NAME;
+      if(process.env.OPENSHIFT_MONGODB_DB_PASSWORD){
+        connection_string = process.env.OPENSHIFT_MONGODB_DB_USERNAME + ":" +
+        process.env.OPENSHIFT_MONGODB_DB_PASSWORD + "@" +
+        process.env.OPENSHIFT_MONGODB_DB_HOST + ':' +
+        process.env.OPENSHIFT_MONGODB_DB_PORT + '/' +
+        process.env.OPENSHIFT_APP_NAME;
       }
-
+      
       for (var i = 0; i < maxConnections; i += 1) {
 
         MongoClient.connect(('mongodb://' + connection_string), function (err, dbhandle) {
